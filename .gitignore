@@ -1,0 +1,17 @@
+.gradle/
+.kotlin/
+.idea/
+**/build/
+local.properties
+*.iml
+*.apk
+*.aab
+*.jks
+*.keystore
+*.log
+
+# 本地演示稿和真机调试产物
+/*.png
+/home-qa.xml
+/空叶记账-互动体验版.html
+/build-and-install.ps1

@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="900" android:viewportHeight="900">
+    <path android:fillColor="#f7f0e3" android:pathData="M0,0h900v900h-900z"/>
+    <path android:fillColor="#fde0d9" android:pathData="M180,90L720,90A90,90 0,0 1,810 180L810,720A90,90 0,0 1,720 810L180,810A90,90 0,0 1,90 720L90,180A90,90 0,0 1,180 90Z"/>
+    <group android:translateY="-285.0">
+        <path android:pathData="M302,522c-22-36-62-40-106-20-48,22-94,52-108,76,10,44,46,84,100,96C150,728,144,818,176,884C208,950,322,976,450,976C578,976,692,950,724,884C756,818,750,728,712,674c54-12,90-52,100-96-14-24-60-54-108-76-44-20-84-16-106,20-64-24-232-24-296,0Z" android:fillColor="#fde0d9" />
+        <path android:pathData="M274,536c-36-18-76-12-118,8-34,16-58,26-66,36,12,42,50,80,116,92,26-42,50-88,68-136ZM626,536c36-18,76-12,118,8,34,16,58,26,66,36-12,42-50,80-116,92-26-42-50-88-68-136Z" android:fillColor="#f8aba0" />
+        <path android:pathData="M198.0,848.0a68.0,65.0 0,1 0,136.0,0a68.0,65.0 0,1 0,-136.0,0" android:fillColor="#fcc0b3" />
+        <path android:pathData="M566.0,848.0a68.0,65.0 0,1 0,136.0,0a68.0,65.0 0,1 0,-136.0,0" android:fillColor="#fcc0b3" />
+        <path android:pathData="M302,522c64-24,232-24,296,0M302,522c-22-36-62-40-106-20-48,22-94,52-108,76,10,44,50,86,118,96,28-44,52-90,68-138M598,522c22-36,62-40,106-20,48,22,94,52,108,76-10,44-50,86-118,96-28-44-52-90-68-138M186,672C150,728,144,818,176,884C208,950,322,976,450,976C578,976,692,950,724,884C756,818,750,728,714,672" android:fillColor="#00000000" android:strokeColor="#da746a" android:strokeWidth="34" android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:pathData="M272,760C290,722,338,722,356,760M544,760C562,722,610,722,628,760" android:fillColor="#00000000" android:strokeColor="#371912" android:strokeWidth="34" android:strokeLineCap="round" />
+        <!-- A single filled outline keeps the mouth joined to the snout at small icon sizes. -->
+        <path android:fillColor="#cf6257" android:pathData="M450,713C515,713 563,749 563,802C563,849 528,875 488,876C487,903 472,923 450,923C428,923 413,903 412,876C372,875 337,849 337,802C337,749 385,713 450,713Z" />
+        <path android:fillColor="#f8b4aa" android:pathData="M450,731C505,731 545,762 545,802C545,839 515,858 485,858C469,858 463,850 450,850C437,850 431,858 415,858C385,858 355,839 355,802C355,762 395,731 450,731Z" />
+        <path android:fillColor="#ff859d" android:pathData="M428,874C428,870 438,865 450,865C462,865 472,870 472,874C472,893 463,908 450,908C437,908 428,893 428,874Z" />
+        <group android:rotation="-72.0" android:pivotX="412.0" android:pivotY="801.0"><path android:pathData="M390.0,801.0a22.0,14.0 0,1 0,44.0,0a22.0,14.0 0,1 0,-44.0,0" android:fillColor="#da746a" /></group>
+        <group android:rotation="-18.0" android:pivotX="488.0" android:pivotY="801.0"><path android:pathData="M474.0,801.0a14.0,22.0 0,1 0,28.0,0a14.0,22.0 0,1 0,-28.0,0" android:fillColor="#da746a" /></group>
+    </group>
+</vector>
