@@ -1,6 +1,11 @@
 package com.kongye.ledger
 import android.app.Instrumentation
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.os.Bundle
+import android.os.SystemClock
 import android.content.Intent
 import java.time.LocalDate
 import org.json.JSONObject
@@ -10,9 +15,26 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 class LedgerTests:Instrumentation(){
- override fun onCreate(arguments:Bundle?){super.onCreate(arguments);start()}
+ private var mode: String? = null
+ override fun onCreate(arguments:Bundle?){
+  super.onCreate(arguments)
+  mode = arguments?.getString("mode")
+  start()
+ }
  override fun onStart(){val result=Bundle();try{
  require(targetContext.packageName.endsWith(".qa")) { "Tests must use the isolated QA package" }
+ if (mode == "listener") {
+  verifyNotificationListener()
+  result.putString("stream", "PASS: Android notification delivered to PaymentListener, recognized and saved automatically")
+  finish(RESULT_OK, result)
+  return
+ }
+ if (mode == "webdav-password") {
+  verifySavedWebDavPassword()
+  result.putString("stream", "PASS: WebDAV password is encrypted, reusable, scoped to the saved account, and replaceable")
+  finish(RESULT_OK, result)
+  return
+ }
  val s=Store.get(targetContext);s.db.clearAllTables();val now=System.currentTimeMillis()
  fun check(ok:Boolean,message:String){if(!ok)throw AssertionError(message)}
  check(cents("12.34")==1234L,"money precision")
@@ -108,6 +130,7 @@ class LedgerTests:Instrumentation(){
  s.restore(dav.download(account))
  check(s.txns().size==1 && methods==listOf("PROPFIND","PROPFIND","MKCOL","PUT","PROPFIND","PUT","GET"),"WebDAV round trip")
  check(runCatching { LedgerDavAccount("http://example.invalid/dav/","fixture","app-key") }.isFailure,"WebDAV requires HTTPS")
+ verifySavedWebDavPassword()
  val malformed=JSONObject(backup)
  val invalidRecord=JSONObject().put("id","bad").put("kind","Txn").put("payload",JSONObject())
  malformed.getJSONArray("records").put(invalidRecord)
@@ -115,8 +138,87 @@ class LedgerTests:Instrumentation(){
  s.db.clearAllTables();s.set("budget","300000");s.set("startDay","1")
  val today=LocalDate.now();val q=s.quota(today);s.save(Txn(cents=10000,merchant="测试",category="餐饮"));check(s.quota(today)==q,"daily quota fixed")
  check(s.spent(today)==10000L,"daily totals");check(BillImport.csv("a,b\n\"x,y\",\"z\"\"q\"").last()==listOf("x,y","z\"q"),"CSV quoting")
- s.db.clearAllTables();s.set("onboarded","false");result.putString("stream","PASS: keypad, parsing, dedupe, import, local and WebDAV backup, malformed backup, and daily quota")
+ s.db.clearAllTables();s.set("onboarded","false");result.putString("stream","PASS: keypad, parsing, dedupe, import, local and WebDAV backup, saved WebDAV password, malformed backup, and daily quota")
  finish(RESULT_OK,result)
  }catch(t:Throwable){result.putString("stream",t.stackTraceToString());finish(0,result)}}
+ private fun verifySavedWebDavPassword() {
+  val preferences = targetContext.getSharedPreferences("ledger_webdav", Context.MODE_PRIVATE)
+  val previous = preferences.all
+  val address = "https://example.invalid/dav/"
+  val user = "fixture"
+  val password = "密码 !\"&42"
+  try {
+   check(preferences.edit().clear().putString("address", address).putString("user", user).commit())
+   val settings = LedgerDavSettings(targetContext)
+   check(settings.publicConfig().getString("address") == address && !settings.publicConfig().getBoolean("hasPassword"))
+   check(settings.save(settings.account(address, user, password, false)))
+   val reopened = LedgerDavSettings(targetContext)
+   val config = reopened.publicConfig()
+   check(config.length() == 3 && config.getBoolean("hasPassword"))
+   check(preferences.getString("encryptedPassword", "").orEmpty().isNotEmpty())
+   check(preferences.all.values.none { it.toString().contains(password) })
+   check(!Store.get(targetContext).backup().contains("encryptedPassword"))
+   check(reopened.account(address.removeSuffix("/"), user, "", true).password == password)
+   check(runCatching { reopened.account("https://elsewhere.invalid/dav/", user, "", true) }.isFailure)
+   check(runCatching { reopened.account(address, "other", "", true) }.isFailure)
+   check(reopened.save(reopened.account(address, user, "updated", false)))
+   check(reopened.account(address, user, "", true).password == "updated")
+   check(reopened.save(reopened.account(address, user, "", false)))
+   check(!reopened.publicConfig().getBoolean("hasPassword"))
+  } finally {
+   val editor = preferences.edit().clear()
+   previous.forEach { (key, value) -> editor.putString(key, value as String) }
+   check(editor.commit())
+  }
+ }
+
+ private fun verifyNotificationListener() {
+  val context = targetContext
+  check(notificationAccess(context)) { "Enable notification access for the isolated QA package first" }
+  val store = Store.get(context)
+  val manager = context.getSystemService(NotificationManager::class.java)
+  check(manager.areNotificationsEnabled()) { "Enable notifications for the isolated QA package first" }
+  val channels = listOf("com.tencent.mm", "com.eg.android.AlipayGphone", "com.unionpay")
+  val options = mapOf(
+   "autoGuard" to "true", "notifications" to "true", "sms" to "false", "packages" to context.packageName,
+   "reminders" to "false"
+  ) + channels.associate { "channel:$it" to "false" }
+  val previous = options.keys.associateWith { key -> store.setting(key, if (key == "packages") "" else "true") }
+  val merchant = "瑞幸联调${SystemClock.elapsedRealtime()}"
+  val channelId = "ledger-qa-listener"
+  val notificationId = 40241
+  try {
+   options.forEach(store::set)
+   awaitCondition("Android did not connect PaymentListener") { PaymentListener.connected }
+   manager.createNotificationChannel(NotificationChannel(channelId, "账本联调测试", NotificationManager.IMPORTANCE_LOW))
+   manager.notify(notificationId, Notification.Builder(context, channelId)
+    .setSmallIcon(R.drawable.ic_launcher)
+    .setContentTitle("支付成功")
+    .setContentText("向${merchant}支付12.34元")
+    .build())
+   awaitCondition("No transaction was saved from the Android notification") { store.txns().any { it.merchant == merchant } }
+   val txn = store.txns().single { it.merchant == merchant }
+   check(txn.cents == 1234L && txn.direction == "支出" && txn.category == "餐饮")
+   check(txn.source == "自动" && txn.status == "已入账" && txn.events.size == 1)
+   val event = store.rows("RawEvent").single { it.optString("id") == txn.events.single() }
+   check(event.optString("sender") == context.packageName && event.optString("source") == "notification")
+  } finally {
+   manager.cancel(notificationId)
+   manager.deleteNotificationChannel(channelId)
+   store.txns().filter { it.merchant == merchant }.forEach { item ->
+    item.events.forEach(store::delete)
+    store.delete(item.id)
+   }
+   previous.forEach(store::set)
+  }
+ }
+
+ private fun awaitCondition(message: String, condition: () -> Boolean) {
+  val deadline = SystemClock.elapsedRealtime() + 15_000
+  while (!condition()) {
+   check(SystemClock.elapsedRealtime() < deadline) { message }
+   SystemClock.sleep(120)
+  }
+ }
  companion object {const val RESULT_OK=-1}
 }

@@ -9,14 +9,36 @@ import androidx.work.*
 import java.util.concurrent.TimeUnit
 import java.time.*
 
+internal const val REMINDER_CHANNEL_ID = "ledger"
+
+internal fun reminderPermissionStatus(context: Context): String {
+    val manager = context.getSystemService(NotificationManager::class.java)
+    if (!manager.areNotificationsEnabled()) return "permission"
+    return if (manager.getNotificationChannel(REMINDER_CHANNEL_ID)?.importance == NotificationManager.IMPORTANCE_NONE) {
+        "channel-blocked"
+    } else {
+        "active"
+    }
+}
+
 fun notifyUser(c:Context,title:String,text:String,id:Int){
  if(android.os.Build.VERSION.SDK_INT>=33&&c.checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=PackageManager.PERMISSION_GRANTED)return
  val s=Store.get(c);if(s.setting("reminders","true")!="true")return
- val nm=c.getSystemService(NotificationManager::class.java);nm.createNotificationChannel(NotificationChannel("ledger","记账提醒",NotificationManager.IMPORTANCE_DEFAULT))
+ val nm=c.getSystemService(NotificationManager::class.java);nm.createNotificationChannel(NotificationChannel(REMINDER_CHANNEL_ID,"记账提醒",NotificationManager.IMPORTANCE_DEFAULT))
  val pi=PendingIntent.getActivity(c,id,Intent(c,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("pending",id==11).putExtra("review",id==15).putExtra("sources",id==12).putExtra("monthly",id==17),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
- nm.notify(id,Notification.Builder(c,"ledger").setSmallIcon(com.kongye.ledger.R.drawable.ic_launcher).setContentTitle(title).setContentText(text).setContentIntent(pi).setAutoCancel(true).build())
+ nm.notify(id,Notification.Builder(c,REMINDER_CHANNEL_ID).setSmallIcon(com.kongye.ledger.R.drawable.ic_launcher).setContentTitle(title).setContentText(text).setContentIntent(pi).setAutoCancel(true).build())
 }
 fun notificationAccess(c:Context):Boolean = c.packageName in androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(c)
+
+internal fun smsListeningStatus(context: Context): String {
+    val read = context.checkSelfPermission(android.Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+    val receive = context.checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
+    return when {
+        read && receive -> "active"
+        read || receive -> "partial"
+        else -> "permission"
+    }
+}
 
 class PaymentListener:NotificationListenerService(){
  companion object {

@@ -30,6 +30,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
@@ -38,6 +39,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -61,7 +64,7 @@ fun catColor(cat: String) = Color(
 fun moneyStyle(size: TextUnit) = TextStyle(fontSize = size, fontWeight = FontWeight.Black, fontFeatureSettings = "tnum")
 
 class MainActivity : ComponentActivity() {
-    lateinit var store: Store
+    private var store: Store? = null
     var entryIntent by mutableStateOf<Intent?>(null)
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -72,21 +75,84 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= 31) {
+            splashScreen.setOnExitAnimationListener { it.remove() }
+        }
         if (Build.VERSION.SDK_INT >= 29) {
             window.isStatusBarContrastEnforced = false
             window.isNavigationBarContrastEnforced = false
         }
-        store = Store.get(this)
-        if (store.setting("firstMetDate").isBlank()) {
-            store.set("firstMetDate", LocalDate.now().toString())
-        }
-        if (store.setting("onboarded") != "true") store.set("onboarded", "true")
         entryIntent = intent
-        schedule(this)
         setContent {
-            MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xff2f68e6), background = Color(0xfff7f3e8))) {
-                Box(Modifier.fillMaxSize().background(Color(0xfff7f3e8))) {
-                    LedgerWebScreen(this@MainActivity, store)
+            var ledger by remember { mutableStateOf<Store?>(null) }
+            var ledgerPresented by remember { mutableStateOf(false) }
+            var startupProgress by remember { mutableFloatStateOf(0f) }
+            var webViewPrepared by remember { mutableStateOf(false) }
+            var showLedger by remember { mutableStateOf(false) }
+            var introFinished by remember { mutableStateOf(false) }
+            var initializationFailed by remember { mutableStateOf(false) }
+            var attempt by remember { mutableIntStateOf(0) }
+            LaunchedEffect(Unit) {
+                prepareLedgerWebView(applicationContext)
+                webViewPrepared = true
+            }
+            LaunchedEffect(attempt) {
+                startupProgress = 0f
+                try {
+                    val opened = withContext(Dispatchers.IO) {
+                        Store.get(applicationContext).also { ledgerStore ->
+                            if (ledgerStore.setting("firstMetDate").isBlank()) {
+                                ledgerStore.set("firstMetDate", LocalDate.now().toString())
+                            }
+                            if (ledgerStore.setting("onboarded") != "true") ledgerStore.set("onboarded", "true")
+                            schedule(applicationContext)
+                        }
+                    }
+                    store = opened
+                    startupProgress = .20f
+                    ledger = opened
+                    refreshLedger(opened)
+                } catch (error: kotlinx.coroutines.CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    android.util.Log.w("LedgerStartup", "Unable to initialize the ledger", error)
+                    initializationFailed = true
+                }
+            }
+            val splashVisible = !introFinished || (!ledgerPresented && !initializationFailed)
+            fun finishIntro() {
+                showLedger = true
+                introFinished = true
+            }
+            val background = colorResource(R.color.ledger_launch_background)
+            MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xff2f68e6), background = background)) {
+                Box(Modifier.fillMaxSize().background(background)) {
+                    if (initializationFailed) {
+                        LedgerLoadError(background) { initializationFailed = false; attempt++ }
+                    } else if (showLedger && webViewPrepared) {
+                        ledger?.let {
+                            LedgerWebScreen(
+                                this@MainActivity,
+                                it,
+                                onStartupProgress = { fraction -> startupProgress = maxOf(startupProgress, fraction) },
+                                onPresented = { ready ->
+                                    if (ready) startupProgress = 1f
+                                    ledgerPresented = true
+                                }
+                            )
+                        }
+                    }
+                    BackHandler(splashVisible) { finishIntro() }
+                    AnimatedVisibility(visible = splashVisible, exit = fadeOut(tween(240))) {
+                        SplashScreenOverlay(
+                            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
+                            readyToEnter = ledgerPresented || initializationFailed,
+                            loadProgress = startupProgress,
+                            onEntranceFinished = { showLedger = true },
+                            onSkip = { finishIntro() },
+                            onFinished = { finishIntro() }
+                        )
+                    }
                 }
             }
         }
@@ -94,10 +160,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::store.isInitialized) {
-            store.changed()
-            Thread { runCatching { store.takeDaySnapshot(); readSms(this) } }.start()
-        }
+        store?.let(::refreshLedger)
+    }
+
+    private fun refreshLedger(store: Store) {
+        store.changed()
+        Thread { runCatching { store.takeDaySnapshot(); readSms(this) } }.start()
     }
 }
 

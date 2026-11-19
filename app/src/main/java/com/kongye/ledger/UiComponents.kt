@@ -20,12 +20,13 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
-import kotlinx.coroutines.delay
 
 val Coral = Color(0xfff4a58e)
 val Sky = Color(0xff8ccae6)
@@ -275,174 +276,158 @@ fun CoinBurstOverlay(
 }
 
 @Composable
-fun SplashScreenOverlay(onFinished: () -> Unit) {
-    val theme = LocalLedgerTheme.current
-    var stage by remember { mutableIntStateOf(0) }
-    val currentFinish by rememberUpdatedState(onFinished)
+fun SplashScreenOverlay(
+    modifier: Modifier = Modifier,
+    readyToEnter: Boolean = true,
+    loadProgress: Float = 1f,
+    onEntranceFinished: () -> Unit = {},
+    onSkip: (() -> Unit)? = null,
+    onFinished: () -> Unit
+) {
+    val entrance = remember { Animatable(0f) }
+    val progress = remember { Animatable(0f) }
+    val startLedger by rememberUpdatedState(onEntranceFinished)
+    val finish by rememberUpdatedState(onFinished)
+    var introSettled by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        stage = 1
-        delay(220)
-        stage = 2
-        delay(680)
-        currentFinish()
+        entrance.animateTo(1f, tween(520, easing = LinearEasing))
+        startLedger()
+        introSettled = true
     }
-    val mascotScale by animateFloatAsState(
-        targetValue = when (stage) {
-            0 -> 0.52f
-            1 -> 1.04f
-            else -> 1f
-        },
-        animationSpec = spring(dampingRatio = 0.56f, stiffness = 580f),
-        label = "splash_mascot_scale"
-    )
-    val coinOffsetY by animateFloatAsState(
-        targetValue = if (stage >= 2) 22f else -86f,
-        animationSpec = spring(dampingRatio = 0.58f, stiffness = 480f),
-        label = "splash_coin_y"
-    )
-    val coinScale by animateFloatAsState(
-        targetValue = if (stage >= 2) 0.92f else 1.08f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f),
-        label = "splash_coin_scale"
-    )
-    val progress by animateFloatAsState(
-        targetValue = when (stage) {
-            0 -> 0.15f
-            1 -> 0.65f
-            else -> 1f
-        },
-        animationSpec = tween(420, easing = FastOutSlowInEasing),
-        label = "splash_progress"
-    )
+    val canDismiss = introSettled && readyToEnter
+    val progressTarget = if (canDismiss) loadProgress else minOf(loadProgress, .94f)
+    LaunchedEffect(progressTarget, canDismiss) {
+        progress.animateTo(progressTarget, tween(if (canDismiss) 180 else 210, easing = FastOutSlowInEasing))
+        if (canDismiss) {
+            withFrameNanos { }
+            finish()
+        }
+    }
+    val sheen = if (!readyToEnter && android.animation.ValueAnimator.areAnimatorsEnabled()) {
+        rememberInfiniteTransition(label = "loading_sheen").animateFloat(
+            initialValue = -.45f,
+            targetValue = 1.45f,
+            animationSpec = infiniteRepeatable(tween(1050, easing = LinearEasing)),
+            label = "loading_sheen_position"
+        )
+    } else null
 
-    Box(
+    val background = colorResource(R.color.ledger_launch_background)
+    val startScale = dimensionResource(R.dimen.ledger_splash_mascot_height) / 188.dp
+    fun reveal(from: Float) = FastOutSlowInEasing.transform(((entrance.value - from) / (1f - from)).coerceIn(0f, 1f))
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(theme.canvas)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { currentFinish() },
+            .background(background)
+            .then(modifier)
+            .clickable(indication = null, interactionSource = null, onClickLabel = "进入账本") { (onSkip ?: finish)() },
         contentAlignment = Alignment.Center
     ) {
+        val rise = (maxHeight * .085f).coerceIn(38.dp, 72.dp)
         Canvas(Modifier.fillMaxSize()) {
-            val cx = size.width / 2f
-            val cy = size.height * 0.42f
+            val glow = reveal(.12f)
+            val center = Offset(size.width / 2f, size.height / 2f - rise.toPx() + 12.dp.toPx())
+            val radius = 125.dp.toPx()
             drawCircle(
-                color = theme.primary.copy(alpha = 0.24f),
-                radius = size.minDimension * 0.42f,
-                center = Offset(cx, cy)
+                Brush.radialGradient(
+                    0f to Color(0xfffcc0b3).copy(alpha = glow * .36f),
+                    .48f to Color(0xffffe494).copy(alpha = glow * .22f),
+                    1f to Color.Transparent,
+                    center = center,
+                    radius = radius
+                ),
+                radius = radius,
+                center = center
             )
-            drawCircle(
-                color = theme.secondary.copy(alpha = 0.25f),
-                radius = size.minDimension * 0.30f,
-                center = Offset(cx, cy)
-            )
-            drawFourPointStar(Offset(size.width * 0.16f, size.height * 0.22f), 11.dp.toPx(), Yellow, Ink)
-            drawFourPointStar(Offset(size.width * 0.84f, size.height * 0.25f), 9.dp.toPx(), Coral, Ink)
-            drawFourPointStar(Offset(size.width * 0.18f, size.height * 0.56f), 8.dp.toPx(), Sky, Ink)
-            drawFourPointStar(Offset(size.width * 0.82f, size.height * 0.54f), 10.dp.toPx(), Yellow, Ink)
+            drawFourPointStar(Offset(size.width * .16f, size.height * .23f), 9.dp.toPx(),
+                Color(0xfffcd65c).copy(alpha = glow), Color(0xffe5a124).copy(alpha = glow))
+            drawFourPointStar(Offset(size.width * .85f, size.height * .29f), 7.dp.toPx(),
+                Color(0xfffcc0b3).copy(alpha = glow), Color(0xffda746a).copy(alpha = glow))
         }
 
+        CoinBadge(Modifier.offset(x = 62.dp, y = -rise - 77.dp).size(40.dp).graphicsLayer {
+            val fraction = reveal(.22f)
+            alpha = fraction
+            translationY = -66.dp.toPx() * (1f - fraction)
+            rotationZ = -25f * (1f - fraction)
+            scaleX = .55f + .45f * fraction
+            scaleY = scaleX
+        })
+        Image(
+            painter = painterResource(R.drawable.v8_happy),
+            contentDescription = null,
+            modifier = Modifier.size(188.dp).graphicsLayer {
+                val fraction = reveal(0f)
+                translationY = -rise.toPx() * fraction
+                scaleX = startScale + (1f - startScale) * fraction
+                scaleY = scaleX
+            }
+        )
+
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
+            modifier = Modifier.align(Alignment.TopCenter)
+                .offset(y = maxHeight / 2 - rise + 104.dp)
+                .padding(horizontal = 16.dp)
+                .graphicsLayer {
+                    val fraction = reveal(.23f)
+                    alpha = fraction
+                    translationY = 8.dp.toPx() * (1f - fraction)
+                },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .background(Color.White, RoundedCornerShape(50))
-                    .border(2.dp, Ink, RoundedCornerShape(50))
-                    .padding(horizontal = 14.dp, vertical = 5.dp)
-            ) {
-                Text("Kongye · 空叶出品", color = Ink, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            Box(
-                modifier = Modifier.size(224.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CoinBadge(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(x = 54.dp, y = coinOffsetY.dp)
-                        .scale(coinScale)
-                        .size(44.dp)
-                )
-                Image(
-                    painter = painterResource(R.drawable.v8_happy),
-                    contentDescription = "粉噗噗",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(mascotScale)
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                "空叶记账",
-                color = Ink,
-                fontSize = 34.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
-            )
+            Text("空叶记账", color = Color(0xff3d3126), fontSize = 28.sp,
+                lineHeight = 34.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
-            Text(
-                "粉噗噗陪你，好好花钱",
-                color = Muted,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(20.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                listOf("happy", "ok", "sad").forEachIndexed { idx, mood ->
-                    val sScale by animateFloatAsState(
-                        targetValue = if (stage >= 1) 1f else 0f,
-                        animationSpec = spring(
-                            dampingRatio = 0.54f,
-                            stiffness = 560f
-                        ),
-                        label = "stamp_$idx"
+            Text("付钱的那一刻，噗噗替你记下", color = Color(0xff968471), fontSize = 13.sp, lineHeight = 18.sp)
+            Spacer(Modifier.height(17.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(R.drawable.stamp_a_happy, R.drawable.stamp_a_ok, R.drawable.stamp_a_sad).forEachIndexed { index, stamp ->
+                    Image(
+                        painter = painterResource(stamp),
+                        contentDescription = null,
+                        modifier = Modifier.graphicsLayer {
+                            val fraction = reveal(.31f + index * .12f)
+                            alpha = fraction
+                            scaleX = .67f + .33f * fraction
+                            scaleY = scaleX
+                        }.background(Color.White, RoundedCornerShape(16.dp))
+                            .padding(horizontal = 11.dp, vertical = 6.dp).size(36.dp, 26.dp)
                     )
-                    Box(
-                        modifier = Modifier
-                            .scale(sScale)
-                            .background(Color.White, RoundedCornerShape(14.dp))
-                            .border(2.dp, Ink, RoundedCornerShape(14.dp))
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(stampDrawableRes(mood, LocalStampGroup.current)),
-                            contentDescription = null,
-                            modifier = Modifier.size(34.dp, 24.dp)
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Canvas(Modifier.width(168.dp).height(7.dp)) {
+                val corners = CornerRadius(size.height / 2)
+                val fillWidth = size.width * progress.value
+                drawRoundRect(Color(0xffeee8dc), cornerRadius = corners)
+                if (fillWidth > 0f) {
+                    val fillSize = Size(fillWidth, size.height)
+                    val fillCorners = CornerRadius(minOf(size.height, fillWidth) / 2)
+                    drawRoundRect(
+                        brush = Brush.horizontalGradient(listOf(Color(0xfff9b4b8), Color(0xfff3969b)), endX = fillWidth),
+                        size = fillSize,
+                        cornerRadius = fillCorners
+                    )
+                    sheen?.let {
+                        val center = fillWidth * it.value
+                        val halfWidth = fillWidth * .34f
+                        drawRoundRect(
+                            brush = Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color(0x7affffff), Color.Transparent),
+                                startX = center - halfWidth,
+                                endX = center + halfWidth
+                            ),
+                            size = fillSize,
+                            cornerRadius = fillCorners
                         )
                     }
                 }
             }
-
-            Spacer(Modifier.height(22.dp))
-
-            StripedProgressBar(
-                progress = progress,
-                stripeColor = theme.primary,
-                stripeAltColor = theme.stripeB,
-                modifier = Modifier
-                    .width(180.dp)
-                    .height(14.dp)
-            )
+            Spacer(Modifier.height(11.dp))
+            Text("轻触任意处进入账本", color = Color(0xff968471), fontSize = 11.5.sp, lineHeight = 16.sp)
         }
     }
 }
-
 private fun DrawScope.drawFourPointStar(center: Offset, radius: Float, fill: Color, stroke: Color) {
     val path = Path().apply {
         moveTo(center.x, center.y - radius)

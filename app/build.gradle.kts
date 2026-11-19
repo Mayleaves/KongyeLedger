@@ -9,8 +9,8 @@ android {
         applicationId = "com.kongye.ledger"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.3.10"
+        versionCode = 23
+        versionName = "0.3.19"
         testInstrumentationRunner = "com.kongye.ledger.LedgerTests"
     }
     buildTypes {
@@ -31,6 +31,7 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.webkit:webkit:1.16.0")
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
     implementation("androidx.work:work-runtime:2.9.0")

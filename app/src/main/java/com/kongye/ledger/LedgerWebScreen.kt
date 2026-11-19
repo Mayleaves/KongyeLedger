@@ -1,11 +1,16 @@
 package com.kongye.ledger
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.util.Log
 import android.view.View
 import android.webkit.ConsoleMessage
@@ -35,13 +40,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewOutcomeReceiver
+import androidx.webkit.WebViewStartUpConfig
+import androidx.webkit.WebViewStartUpResult
+import androidx.webkit.WebViewStartupException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -51,6 +66,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import kotlin.coroutines.resume
 
 private const val LEDGER_PAGE = "https://appassets.androidplatform.net/assets/ledger.html"
 private val timeFormat = DateTimeFormatter.ofPattern("HH:mm")
@@ -60,11 +76,41 @@ private val channels = mapOf(
     "unionpay" to "com.unionpay"
 )
 
+private data class WebDavResult(val success: Boolean, val message: String, val settingsSaved: Boolean = false)
+
 internal fun Store.notificationChannelEnabled(packageName: String): Boolean =
     setting("channel:$packageName", "true") == "true"
 
+internal suspend fun prepareLedgerWebView(context: Context) {
+    // The standard constructor is still available if prewarming fails or takes too long.
+    try {
+        val prepared = withTimeoutOrNull(8_000) {
+            suspendCancellableCoroutine { continuation ->
+                val config = WebViewStartUpConfig.Builder(Dispatchers.IO.asExecutor()).build()
+                WebViewCompat.startUpWebView(context, config, object : WebViewOutcomeReceiver<WebViewStartUpResult, WebViewStartupException> {
+                    override fun onResult(result: WebViewStartUpResult) = continuation.resume(true)
+
+                    override fun onError(error: WebViewStartupException) {
+                        Log.w("LedgerWeb", "Unable to prewarm the ledger WebView", error)
+                        continuation.resume(false)
+                    }
+                })
+            }
+        }
+        if (prepared == null) Log.w("LedgerWeb", "Prewarming the ledger WebView timed out")
+    } catch (error: RuntimeException) {
+        if (error is CancellationException) throw error
+        Log.w("LedgerWeb", "Unable to start prewarming the ledger WebView", error)
+    }
+}
+
 @Composable
-internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
+internal fun LedgerWebScreen(
+    activity: MainActivity,
+    store: Store,
+    onStartupProgress: (Float) -> Unit,
+    onPresented: (Boolean) -> Unit
+) {
     val scope = rememberCoroutineScope()
     var web by remember { mutableStateOf<WebView?>(null) }
     var loaded by remember { mutableStateOf(false) }
@@ -73,20 +119,23 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
     val pageAttempt = attempt
     val revision by store.revision.collectAsState()
     val entry = activity.entryIntent
+    val reportProgress by rememberUpdatedState(onStartupProgress)
+    val presentLedger by rememberUpdatedState(onPresented)
     var davInProgress by remember { mutableStateOf(false) }
+    val davSettings = remember(activity) { LedgerDavSettings(activity.applicationContext) }
 
     fun script(code: String) { web?.evaluateJavascript(code, null) }
     fun result(message: String) = script("syncLedger(); toast(${JSONObject.quote(message)});")
-    fun runWebDav(operation: String, address: String, user: String, password: String) {
+    fun runWebDav(operation: String, address: String, user: String, password: String, reusePassword: Boolean) {
         if (davInProgress) return
         davInProgress = true
         scope.launch {
             try {
-                val (success, message) = withContext(Dispatchers.IO) {
+                val (success, message, settingsSaved) = withContext(Dispatchers.IO) {
                     val account = try {
-                        LedgerDavAccount(address, user.trim(), password)
+                        davSettings.account(address, user, password, reusePassword)
                     } catch (e: IllegalArgumentException) {
-                        return@withContext false to (e.message ?: "请检查 WebDAV 设置")
+                        return@withContext WebDavResult(false, e.message ?: "请检查 WebDAV 设置")
                     }
                     try {
                         val dav = LedgerWebDav()
@@ -104,28 +153,25 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
                                 }
                                 "已从 WebDAV 恢复账本"
                             }
-                            else -> return@withContext false to "不支持此操作"
+                            else -> return@withContext WebDavResult(false, "不支持此操作")
                         }
-                        activity.getSharedPreferences("ledger_webdav", Context.MODE_PRIVATE).edit()
-                            .putString("address", account.directory.toString())
-                            .putString("user", account.user)
-                            .apply()
-                        true to message
+                        val saved = reusePassword || davSettings.save(account)
+                        WebDavResult(true, if (saved) message else "$message，但未能保存 WebDAV 设置", saved)
                     } catch (e: LedgerDavException) {
-                        false to (e.message ?: "WebDAV 操作失败")
+                        WebDavResult(false, e.message ?: "WebDAV 操作失败")
                     } catch (e: IllegalArgumentException) {
-                        false to (e.message ?: "请检查备份文件")
+                        WebDavResult(false, e.message ?: "请检查备份文件")
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: javax.net.ssl.SSLException) {
-                        false to "无法验证服务器的 HTTPS 连接"
+                        WebDavResult(false, "无法验证服务器的 HTTPS 连接")
                     } catch (_: java.net.SocketTimeoutException) {
-                        false to "连接超时，请检查网络和服务器"
+                        WebDavResult(false, "连接超时，请检查网络和服务器")
                     } catch (_: Exception) {
-                        false to "WebDAV 操作失败，请检查地址、网络和目录权限"
+                        WebDavResult(false, "WebDAV 操作失败，请检查地址、网络和目录权限")
                     }
                 }
-                script("finishWebDav($success,${JSONObject.quote(message)});")
+                script("finishWebDav($success,${JSONObject.quote(message)},$settingsSaved);")
             } finally {
                 davInProgress = false
             }
@@ -142,7 +188,11 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
                     }
                 }
             }
-            result(if (outcome.isSuccess) "已导出文件" else "导出失败，请重试")
+            result(when (outcome.exceptionOrNull()) {
+                null -> "已导出文件"
+                is SecurityException -> "没有文件写入权限，请重新选择保存位置。"
+                else -> "导出失败，请重试"
+            })
         }
     }
     val exportBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { export(it, false) }
@@ -171,29 +221,117 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
                         } else importLedgerCsv(store, bytes)
                     }
                 }
-                result(outcome.getOrElse { "导入失败 · ${it.message ?: "请检查文件格式"}" })
+                result(outcome.getOrElse {
+                    if (it is SecurityException) "没有文件读取权限，请重新选择文件。"
+                    else "导入失败 · ${it.message ?: "请检查文件格式"}"
+                })
             }
         }
     }
     val sms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        val status = smsListeningStatus(activity)
+        if (status != "active") {
+            result("短信授权未完成，可重新授权或在系统设置中检查短信权限。")
+        }
         scope.launch {
             withContext(Dispatchers.IO) { runCatching { readSms(activity) } }
             script("syncLedger();")
         }
     }
+    val reminders = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        result(if (granted) "记账提醒权限已授予。" else "未获得记账提醒权限，可在系统通知设置中开启。")
+    }
+    fun openSettings(intent: Intent, failure: String) {
+        try {
+            activity.startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            result(failure)
+        } catch (_: SecurityException) {
+            result(failure)
+        }
+    }
+    fun openNotificationSettings() = openSettings(
+        Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS),
+        "无法打开通知授权，请在系统设置中开启空叶记账的通知读取权。"
+    )
+    val permissionRequests = activity.getSharedPreferences("ledger_permissions", Context.MODE_PRIVATE)
+    fun requestSmsAccess() {
+        if (smsListeningStatus(activity) == "active") {
+            result("短信权限已授予。")
+            return
+        }
+        val permissions = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
+        if (permissionRequests.getBoolean("sms_requested", false) && permissions.none(activity::shouldShowRequestPermissionRationale)) {
+            openSettings(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", activity.packageName, null)),
+                "无法打开授权页面，请在空叶记账的应用权限中开启短信权限。"
+            )
+        } else {
+            permissionRequests.edit().putBoolean("sms_requested", true).apply()
+            sms.launch(permissions)
+        }
+    }
+    fun requestReminderAccess() {
+        if (store.setting("reminders", "true") != "true") store.set("reminders", "true")
+        if (Build.VERSION.SDK_INT >= 33 &&
+            activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+            (!permissionRequests.getBoolean("reminders_requested", false) ||
+                activity.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS))) {
+            permissionRequests.edit().putBoolean("reminders_requested", true).apply()
+            reminders.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        val intent = if (reminderPermissionStatus(activity) == "channel-blocked") {
+            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_CHANNEL_ID, REMINDER_CHANNEL_ID)
+        } else {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        }
+        openSettings(intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName), "无法打开系统通知设置。")
+    }
+    fun retryNotificationListener() {
+        if (store.setting("notifications", "true") != "true") store.set("notifications", "true")
+        if (!notificationAccess(activity)) {
+            openNotificationSettings()
+            return
+        }
+        try {
+            NotificationListenerService.requestRebind(ComponentName(activity, PaymentListener::class.java))
+        } catch (_: SecurityException) {
+            result("通知监听重连失败，请检查通知读取权。")
+            return
+        }
+        scope.launch {
+            delay(1800)
+            result(if (PaymentListener.connected && notificationAccess(activity)) "通知监听已连接。" else "通知监听仍未连接，可在通知授权中关掉再重新开启。")
+        }
+    }
     val bridge = remember(pageAttempt) {
-        LedgerWebBridge(store, onWebDav = { operation, address, user, password ->
+        LedgerWebBridge(store, davSettings, onWebDav = { operation, address, user, password, reusePassword ->
             activity.runOnUiThread {
-                if (attempt == pageAttempt && loaded && !loadFailed) runWebDav(operation, address, user, password)
+                if (attempt == pageAttempt && loaded && !loadFailed) runWebDav(operation, address, user, password, reusePassword)
             }
         }) { action ->
             activity.runOnUiThread {
                 if (attempt != pageAttempt) return@runOnUiThread
                 when (action) {
-                    "ready" -> if (!loadFailed) loaded = true
+                    "ready" -> if (!loaded && !loadFailed) {
+                        val target = web ?: return@runOnUiThread
+                        reportProgress(.94f)
+                        target.postVisualStateCallback(pageAttempt.toLong(), object : WebView.VisualStateCallback() {
+                            override fun onComplete(requestId: Long) {
+                                if (attempt == pageAttempt && web == target && !loadFailed) loaded = true
+                            }
+                        })
+                    }
                     "startup-error" -> loadFailed = true
-                    "notification" -> activity.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                    "sms" -> sms.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS))
+                    "notification" -> openNotificationSettings()
+                    "notification-retry" -> retryNotificationListener()
+                    "sms" -> requestSmsAccess()
+                    "reminders" -> requestReminderAccess()
+                    "battery" -> openSettings(
+                        Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
+                        "无法打开电池设置，请在系统设置中检查空叶记账的后台限制。"
+                    )
                     "export-json" -> exportBackup.launch("空叶记账-${LocalDate.now()}.json")
                     "export-csv" -> exportCsv.launch("空叶记账-${LocalDate.now()}.csv")
                     "import-json", "import-csv", "import-bills" -> {
@@ -206,11 +344,15 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
     }
     LaunchedEffect(pageAttempt, web) {
         val target = web ?: return@LaunchedEffect
+        reportProgress(.25f)
         val html = withContext(Dispatchers.IO) {
             runCatching { activity.assets.open("ledger.html").bufferedReader().use { it.readText() } }
         }
         if (web == target && attempt == pageAttempt && !loadFailed) {
-            html.onSuccess { target.loadDataWithBaseURL(LEDGER_PAGE, it, "text/html", "UTF-8", null) }
+            html.onSuccess {
+                reportProgress(.30f)
+                target.loadDataWithBaseURL(LEDGER_PAGE, it, "text/html", "UTF-8", null)
+            }
                 .onFailure {
                     Log.w("LedgerWeb", "Unable to read the packaged ledger page")
                     loadFailed = true
@@ -218,7 +360,9 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
         }
     }
     LaunchedEffect(pageAttempt, loaded, loadFailed) {
-        if (!loaded && !loadFailed) {
+        if (loaded || loadFailed) {
+            presentLedger(loaded && !loadFailed)
+        } else {
             delay(8_000)
             Log.w("LedgerWeb", "Ledger page did not report readiness")
             loadFailed = true
@@ -238,7 +382,7 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
     BackHandler(loaded && !loadFailed) {
         web?.evaluateJavascript("navigateBack()") { if (it == "\"exit\"") activity.finish() }
     }
-    val background = androidx.compose.ui.graphics.Color(0xfff7f3e8)
+    val background = colorResource(R.color.ledger_launch_background)
     Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
         if (!loadFailed) {
             key(pageAttempt) {
@@ -247,7 +391,7 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
                     factory = { context ->
                         try {
                             WebView(context).apply {
-                                setBackgroundColor(Color.rgb(247, 243, 232))
+                                setBackgroundColor(context.getColor(R.color.ledger_launch_background))
                                 settings.javaScriptEnabled = true
                                 settings.allowFileAccess = false
                                 settings.allowContentAccess = false
@@ -274,6 +418,12 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
                                     }
                                 }
                                 webChromeClient = object : WebChromeClient() {
+                                    override fun onProgressChanged(view: WebView, newProgress: Int) {
+                                        if (view == web && attempt == pageAttempt && !loaded && !loadFailed) {
+                                            reportProgress(.30f + newProgress.coerceIn(0, 100) * .005f)
+                                        }
+                                    }
+
                                     override fun onConsoleMessage(message: ConsoleMessage): Boolean {
                                         if (!loaded && message.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
                                             Log.w("LedgerWeb", "Ledger JavaScript startup error at line ${message.lineNumber()}")
@@ -298,28 +448,34 @@ internal fun LedgerWebScreen(activity: MainActivity, store: Store) {
             }
         }
         if (loadFailed) {
-            Column(
-                Modifier.fillMaxSize().background(background).padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("账本页面暂时无法打开")
-                Button(onClick = { loaded = false; loadFailed = false; attempt++ }) { Text("重试") }
-            }
+            LedgerLoadError(background) { loaded = false; loadFailed = false; attempt++ }
         }
+    }
+}
+
+@Composable
+internal fun LedgerLoadError(background: Color, onRetry: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().background(background).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("账本页面暂时无法打开")
+        Button(onClick = onRetry) { Text("重试") }
     }
 }
 
 private class LedgerWebBridge(
     private val store: Store,
-    private val onWebDav: (String, String, String, String) -> Unit,
+    private val davSettings: LedgerDavSettings,
+    private val onWebDav: (String, String, String, String, Boolean) -> Unit,
     private val launch: (String) -> Unit
 ) {
     @JavascriptInterface fun ready() = launch("ready")
     @JavascriptInterface fun startupFailed() = launch("startup-error")
 
     @JavascriptInterface fun configure(action: String) {
-        if (action == "notification" || action == "sms") launch(action)
+        if (action in listOf("notification", "notification-retry", "sms", "reminders", "battery")) launch(action)
     }
     @JavascriptInterface fun importFile(format: String) {
         if (format in listOf("json", "csv", "bills")) launch("import-$format")
@@ -329,15 +485,11 @@ private class LedgerWebBridge(
     }
     @JavascriptInterface fun newId(): String = UUID.randomUUID().toString()
 
-    @JavascriptInterface fun webDavConfig(): String {
-        val preferences = store.ctx.getSharedPreferences("ledger_webdav", Context.MODE_PRIVATE)
-        return JSONObject().put("address", preferences.getString("address", ""))
-            .put("user", preferences.getString("user", "")).toString()
-    }
+    @JavascriptInterface fun webDavConfig(): String = davSettings.publicConfig().toString()
 
-    @JavascriptInterface fun webDav(operation: String, address: String, user: String, password: String) {
+    @JavascriptInterface fun webDav(operation: String, address: String, user: String, password: String, reusePassword: Boolean) {
         if (operation == "test" || operation == "upload" || operation == "restore") {
-            onWebDav(operation, address, user, password)
+            onWebDav(operation, address, user, password, reusePassword)
         }
     }
 
@@ -359,6 +511,25 @@ private class LedgerWebBridge(
         val switches = JSONObject()
         channels.forEach { (key, pkg) -> switches.put(key, store.notificationChannelEnabled(pkg)) }
         switches.put("sms", store.setting("sms", "true") == "true")
+        val autoGuard = store.setting("autoGuard", "true") == "true"
+        val hasNotificationAccess = notificationAccess(store.ctx)
+        val smsStatus = smsListeningStatus(store.ctx)
+        val notificationStatus = when {
+            store.setting("notifications", "true") != "true" -> "disabled"
+            !hasNotificationAccess -> "permission"
+            !PaymentListener.connected -> "disconnected"
+            else -> "active"
+        }
+        val statuses = JSONObject()
+        switches.keys().forEach { channel ->
+            val status = when {
+                !switches.getBoolean(channel) -> "off"
+                !autoGuard -> "paused"
+                channel == "sms" -> smsStatus
+                else -> notificationStatus
+            }
+            statuses.put(channel, status)
+        }
         JSONObject().put("txns", JSONArray(entries.map(::toWeb)))
             .put("firstMetDate", store.setting("firstMetDate", today.toString()))
             .put("budget", store.setting("budget", "300000").toLongOrNull() ?: 300000L)
@@ -366,10 +537,14 @@ private class LedgerWebBridge(
             .put("quotas", quotas)
             .put("stamps", stamps)
             .put("rules", rules)
-            .put("autoGuard", store.setting("autoGuard", "true") == "true")
-            .put("listening", (PaymentListener.connected && store.setting("notifications", "true") == "true" &&
-                channels.values.any(store::notificationChannelEnabled)) ||
-                (switches.getBoolean("sms") && store.ctx.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == 0))
+            .put("autoGuard", autoGuard)
+            .put("listening", statuses.keys().asSequence().any { statuses.getString(it) == "active" })
+            .put("channelStatuses", statuses)
+            .put("permissions", JSONObject()
+                .put("notification", hasNotificationAccess)
+                .put("sms", smsStatus)
+                .put("reminders", if (store.setting("reminders", "true") == "true") reminderPermissionStatus(store.ctx) else "off")
+                .put("battery", store.ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(store.ctx.packageName)))
             .put("channels", switches)
             .put("categories", JSONArray(store.categoryChoices().map { it.name }))
             .toString()

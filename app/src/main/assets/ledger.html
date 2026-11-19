@@ -43,146 +43,6 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","MiSans","Microsoft YaHei UI"
 .burst-coin{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;animation:coinFountain .74s cubic-bezier(.18,.88,.38,1) forwards}
 @keyframes coinFountain{0%{opacity:1;transform:translate(0,0) scale(.5)}45%{opacity:1;transform:translate(calc(var(--dx)*.66),var(--dy)) scale(1.14) rotate(80deg)}100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 105px)) scale(.7) rotate(180deg)}}
 
-.splash-overlay{
-  position:absolute;
-  inset:0;
-  background:var(--canvas-bg);
-  z-index:75;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:30px;
-  cursor:pointer;
-  transition:opacity .28s ease, transform .28s cubic-bezier(.22,1,.36,1);
-}
-.splash-overlay[hidden]{display:none}
-.splash-overlay.hide{
-  opacity:0;
-  transform:scale(1.04);
-  pointer-events:none;
-}
-.splash-stage::before{
-  content:"";
-  position:absolute;
-  z-index:-1;
-  width:280px;
-  height:280px;
-  border-radius:50%;
-  background:radial-gradient(circle, rgba(252,192,179,0.36) 0%, rgba(255,228,148,0.22) 48%, transparent 72%);
-  top:56%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-  animation:pulseGlow 1.8s ease-in-out infinite alternate;
-}
-@keyframes pulseGlow{
-  from{transform:translate(-50%,-50%) scale(.92)}
-  to{transform:translate(-50%,-50%) scale(1.08)}
-}
-.splash-stage{
-  position:relative;
-  width:210px;
-  max-width:100%;
-  height:210px;
-  flex:none;
-  display:grid;
-  place-items:center;
-  z-index:2;
-}
-.splash-pig{
-  width:188px;
-  height:188px;
-  max-width:100%;
-  filter:drop-shadow(0 14px 22px rgba(218,116,106,0.16));
-  animation:splashPigSpring .52s var(--jelly) .04s both, pFloat 2s ease-in-out .56s infinite alternate;
-}
-.splash-coin{
-  position:absolute;
-  top:6px;
-  right:28px;
-  width:40px;
-  height:40px;
-  filter:drop-shadow(0 6px 10px rgba(229,161,36,0.24));
-  animation:splashCoinDrop .58s var(--jelly) .12s both;
-}
-.splash-star{
-  position:absolute;
-  z-index:2;
-  animation:starTwinkle 1.3s ease-in-out infinite alternate;
-}
-@keyframes splashPigSpring{
-  0%{opacity:0;transform:scale(.5) translateY(22px)}
-  100%{opacity:1;transform:scale(1) translateY(0)}
-}
-@keyframes splashCoinDrop{
-  0%{opacity:0;transform:translateY(-78px) rotate(-25deg) scale(.55)}
-  68%{opacity:1;transform:translateY(9px) rotate(8deg) scale(1.08)}
-  100%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
-}
-@keyframes starTwinkle{
-  from{transform:scale(.82) rotate(-8deg);opacity:.65}
-  to{transform:scale(1.14) rotate(8deg);opacity:1}
-}
-@keyframes splashPop{
-  0%{opacity:0;transform:scale(.64) translateY(10px)}
-  100%{opacity:1;transform:scale(1) translateY(0)}
-}
-.splash-title{
-  font-size:28px;
-  font-weight:800;
-  color:var(--ink);
-  letter-spacing:1px;
-  margin-top:4px;
-  z-index:2;
-  animation:splashPop .4s var(--jelly) .12s both;
-}
-.splash-sub{
-  font-size:13px;
-  color:var(--muted);
-  font-weight:500;
-  margin-top:5px;
-  z-index:2;
-  animation:splashPop .4s var(--jelly) .16s both;
-}
-.splash-stamps{
-  display:flex;
-  gap:10px;
-  margin-top:18px;
-  z-index:2;
-}
-.splash-stamp-box{
-  background:var(--card);
-  backdrop-filter:blur(10px);
-  border:var(--border);
-  border-radius:16px;
-  padding:6px 11px;
-  box-shadow:var(--shadow);
-  display:grid;
-  place-items:center;
-}
-.splash-stamp-box:nth-child(1){animation:splashPop .38s var(--jelly) .20s both}
-.splash-stamp-box:nth-child(2){animation:splashPop .38s var(--jelly) .26s both}
-.splash-stamp-box:nth-child(3){animation:splashPop .38s var(--jelly) .32s both}
-.splash-prog-wrap{
-  width:168px;
-  margin-top:20px;
-  z-index:2;
-  animation:splashPop .36s ease .22s both;
-}
-.splash-skip{
-  margin-top:12px;
-  font-size:11.5px;
-  font-weight:500;
-  color:var(--muted);
-  z-index:2;
-}
-
-.splash-prog-wrap .prog{height:7px}
-.splash-prog-wrap .prog>i{width:18%;height:100%;transition:width .92s cubic-bezier(.22,1,.36,1)}
-.splash-overlay.running .prog>i{width:100%}
-
-
 .app-top{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 6px;flex:none;gap:8px;z-index:15}
 .app-top b{font-size:19px;font-weight:800;display:block;line-height:1.15}
 .comp-pill{display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2.5px 9px;border-radius:99px;background:var(--card-soft);border:var(--border);font-size:10.5px;font-weight:600;color:var(--ink2);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.03)}
@@ -228,9 +88,9 @@ body[data-style="meditation"] .ent .ico{border-radius:50%}
 .frow{display:flex;align-items:center;gap:5px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
 .frow::-webkit-scrollbar{display:none}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px 2px;text-align:center}
-.cal-c{display:flex;flex-direction:column;align-items:center;gap:1px;padding:3.5px 0;border-radius:12px;cursor:pointer;border:1px solid transparent}
+.cal-c{display:grid;grid-template-rows:23px auto;justify-items:center;align-items:center;gap:1px;padding:3.5px 0;border-radius:12px;cursor:pointer;border:1px solid transparent}
 .cal-c.sel{background:#fff;border-color:var(--div);box-shadow:0 3px 9px rgba(0,0,0,.05)}
-.cal-c .dl{font-size:9.5px;color:var(--muted);font-weight:600;padding:0 5px;border-radius:99px}
+.cal-c .dl{grid-row:2;font-size:9.5px;color:var(--muted);font-weight:600;padding:0 5px;border-radius:99px}
 .cal-c.today .dl{background:var(--cta);color:#fff}
 
 .dark-guard{background:linear-gradient(135deg,#3a476e,#2b3554);color:#fff;border-radius:24px;padding:15px 16px;position:relative;overflow:hidden}
@@ -239,6 +99,12 @@ body[data-style="meditation"] .ent .ico{border-radius:50%}
 
 .sw::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;right:3px;transition:all .18s var(--jelly)}
 .sw.off{background:rgba(150,145,140,.3)!important}.sw.off::after{right:auto;left:3px}
+.sw.pending{background:#a16615!important}
+button.sw{border:0;padding:0}
+.channel-row{cursor:default}
+.channel-row .m .channel-warning{color:#8b5414;font-weight:650;white-space:normal}
+.channel-tools{display:flex;align-items:center;gap:7px;flex:none}
+.channel-tools .qbtn{color:#2659c2}
 
 .dock-wrap{position:absolute;left:0;right:0;bottom:0;padding:6px 15px 14px;pointer-events:none;z-index:30}
 .dock{pointer-events:auto;display:flex;align-items:center;justify-content:space-between;background:var(--dock);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.92);border-radius:26px;padding:5px 8px;box-shadow:0 12px 28px -6px rgba(45,40,35,.12)}
@@ -272,6 +138,7 @@ body{background:var(--canvas)}
 .action-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
 .action-copy b{font-size:13px}
 .action-copy small{color:var(--muted);font-size:11px;line-height:1.4}
+.action-card.permission-warning .action-copy small{color:#8b5414;font-weight:650}
 .action-arrow{font-size:19px;line-height:1;color:var(--cta)}
 .action-stack{display:grid;gap:8px}
 .date-chip{min-width:0;display:flex;align-items:center;gap:6px;border:1px solid rgba(47,104,230,.12);border-radius:14px;background:#edf2ff;color:#294b8a;font:inherit;font-size:12px;font-weight:650;padding:7px 10px;min-height:38px;cursor:pointer;text-align:left}
@@ -329,6 +196,11 @@ body{background:var(--canvas)}
 .backup-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .dav-form label{display:grid;gap:4px;font-size:12px;font-weight:650}
 .dav-form input{width:100%;padding:9px 10px;border:1px solid var(--div);border-radius:12px;background:white;color:var(--ink);font:inherit}
+.dav-password{position:relative;display:block;min-width:0}
+.dav-password input{color:transparent;-webkit-text-fill-color:transparent;caret-color:#252525;text-shadow:none}
+.dav-password input::selection{color:transparent;-webkit-text-fill-color:transparent}
+.dav-password-mask{position:absolute;inset:1px 11px;display:flex;align-items:center;overflow:hidden;white-space:pre;color:#202020;pointer-events:none}
+.dav-password-mask span{flex:none}
 .dav-help,.dav-status,.dav-confirm p{font-size:11px;line-height:1.5}
 .dav-help{color:var(--muted)}
 .dav-status{color:var(--cta)}
@@ -415,9 +287,6 @@ body{background:var(--canvas)}
       <path d="M402,434c8,16,8,26,0,30-8-4-8-14,0-30ZM450,442c8,16,8,26,0,30-8-4-8-14,0-30ZM498,434c8,16,8,26,0,30-8-4-8-14,0-30Z" fill="#7ac7eb"/>
       <g transform="translate(756 386) rotate(-14) scale(0.92)"><path d="M-30,-4C-62,-36-108,-32-106,-2C-105,16-82,20-64,15C-84,24-88,44-68,48C-48,52-26,34-24,14ZM30,-4C62,-36,108,-32,106,-2C105,16,82,20,64,15C84,24,88,44,68,48C48,52,26,34,24,14Z" fill="#fffaf4" stroke="#da746a" stroke-width="13" stroke-linejoin="round"/><circle cx="0" cy="2" r="40" fill="#ffe278" stroke="#c9742c" stroke-width="14"/><path d="M-13,-14L0,-1L13,-14M-13,0H13M-13,10H13M0,-1V19" fill="none" stroke="#b55d19" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></g>
     </symbol>
-    <symbol id="stamp-empty" viewBox="55 465 790 545">
-      <path fill="none" stroke="#c8c4bb" stroke-width="29" stroke-dasharray="43 40" stroke-linecap="round" stroke-linejoin="round" d="M302,522c-22-36-62-40-106-20-48,22-94,52-108,76,10,44,46,84,100,96C150,728,144,818,176,884C208,950,322,976,450,976C578,976,692,950,724,884C756,818,750,728,712,674c54-12,90-52,100-96-14-24-60-54-108-76-44-20-84-16-106,20-64-24-232-24-296,0Z"/>
-    </symbol>
     <symbol id="stamp-a-happy" viewBox="55 465 790 545">
       <path d="M302,522c-22-36-62-40-106-20-48,22-94,52-108,76,10,44,46,84,100,96C150,728,144,818,176,884C208,950,322,976,450,976C578,976,692,950,724,884C756,818,750,728,712,674c54-12,90-52,100-96-14-24-60-54-108-76-44-20-84-16-106,20-64-24-232-24-296,0Z" fill="#fde0d9"/>
       <path d="M274,536c-36-18-76-12-118,8-34,16-58,26-66,36,12,42,50,80,116,92,26-42,50-88,68-136ZM626,536c36-18,76-12,118,8,34,16,58,26,66,36-12,42-50,80-116,92-26-42-50-88-68-136Z" fill="#f8aba0"/>
@@ -468,30 +337,6 @@ body{background:var(--canvas)}
     <div id="sheet-root"></div>
     <div id="date-root"></div>
 
-    <div class="splash-overlay" id="splash" onclick="hideSplash()" role="button" tabindex="0" aria-label="进入账本" onkeydown="if(event.key==='Enter' || event.key===' ')hideSplash()">
-      <svg class="splash-star" style="left:52px;top:156px" width="22" height="22" viewBox="0 0 24 24">
-        <path d="M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z" fill="#fcd65c" stroke="#e5a124" stroke-width="1.1" stroke-linejoin="round"/>
-      </svg>
-      <svg class="splash-star" style="right:48px;top:192px;animation-delay:.28s" width="18" height="18" viewBox="0 0 24 24">
-        <path d="M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z" fill="#fcc0b3" stroke="#da746a" stroke-width="1.1" stroke-linejoin="round"/>
-      </svg>
-
-      <div class="splash-stage">
-        <svg class="splash-coin" viewBox="0 0 40 40"><use href="#coin" width="40" height="40"/></svg>
-        <svg class="splash-pig" viewBox="0 0 188 188" aria-hidden="true"><use href="#v8-happy" width="188" height="188"/></svg>
-      </div>
-      <div class="splash-title">空叶记账</div>
-      <div class="splash-sub">付钱的那一刻，噗噗替你记下</div>
-      <div class="splash-stamps">
-        <div class="splash-stamp-box"><svg width="36" height="26"><use href="#stamp-a-happy" width="36" height="26"/></svg></div>
-        <div class="splash-stamp-box"><svg width="36" height="26"><use href="#stamp-a-ok" width="36" height="26"/></svg></div>
-        <div class="splash-stamp-box"><svg width="36" height="26"><use href="#stamp-a-sad" width="36" height="26"/></svg></div>
-      </div>
-      <div class="splash-prog-wrap">
-        <div class="prog"><i></i></div>
-      </div>
-      <div class="splash-skip">轻触任意处进入账本</div>
-    </div>
 
   </div>
 </div>
@@ -593,10 +438,6 @@ function save(){
 }
 function navigateBack(){
   if(datePicker){closeDatePicker();return 'handled';}
-  if(!document.getElementById('splash').classList.contains('hide')){
-    hideSplash();
-    return 'handled';
-  }
   if(document.getElementById('sheet-root').children.length){closeSheet();return 'handled';}
   if(S.tab!=='home'){goTab('home');return 'handled';}
   return 'exit';
@@ -652,23 +493,6 @@ function stampDay(date,mood){
     toast('已盖章');
   }
 }
-let splashTimer;
-function startSplash(){
-  const splash=document.getElementById('splash');
-  if(splash.classList.contains('hide'))return;
-  requestAnimationFrame(()=>splash.classList.add('running'));
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  splashTimer=setTimeout(hideSplash,reduced?120:1180);
-}
-function hideSplash(){
-  const splash=document.getElementById('splash');
-  if(splash.classList.contains('hide'))return;
-  clearTimeout(splashTimer);
-  splash.classList.add('hide');
-  splash.setAttribute('aria-hidden','true');
-  splash.tabIndex=-1;
-  setTimeout(()=>{splash.hidden=true;},280);
-}
 function spawnCoinBurst(){
   const box = document.getElementById('fx-layer');
   [[-105,-150],[-55,-195],[0,-215],[55,-195],[105,-150],[-75,-105],[75,-105]].forEach(([dx,dy],i)=>{
@@ -687,12 +511,63 @@ function toast(msg){
 function goTab(t){
   const order=['home','cal','stats','auto'], direction=Math.sign(order.indexOf(t)-order.indexOf(S.tab));
   S.tab=t;
+  slideView(direction);
+}
+function slideView(direction){
   render();
   const view=document.getElementById('view');
   view.scrollTop=0;
   if(direction&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
     view.animate([{opacity:.45,transform:'translateX('+direction*14+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:200,easing:'cubic-bezier(.2,.85,.35,1)'});
   }
+}
+const SWIPE_PAGES={cal:['calSub','cal','list'],stats:['statsSub','overview','worth']};
+function switchSubpage(tab,index){
+  if(S.tab!==tab)return;
+  const [key,...pages]=SWIPE_PAGES[tab];
+  const direction=index-pages.indexOf(S[key]);
+  if(!direction||index<0||index>=pages.length)return;
+  S[key]=pages[index];
+  slideView(direction);
+}
+function bindSubpageSwipe(){
+  const view=document.getElementById('view');
+  let start=null;
+  const blocked=()=>['sheet-root','date-root'].some(id=>document.getElementById(id).childElementCount);
+  view.addEventListener('touchstart',event=>{
+    start=null;
+    if(!SWIPE_PAGES[S.tab]||event.touches.length!==1||blocked())return;
+    const target=event.target;
+    if(target.closest('input, textarea, select, [contenteditable], [aria-label="收支趋势图"]'))return;
+    const strip=target.closest('.frow');
+    if(strip&&strip.scrollWidth>strip.clientWidth+1)return;
+    const touch=event.touches[0];
+    if(touch.clientX<20||touch.clientX>view.clientWidth-20)return;
+    start={tab:S.tab,x:touch.clientX,y:touch.clientY,horizontal:false};
+  },{passive:true});
+  view.addEventListener('touchmove',event=>{
+    if(!start)return;
+    if(event.touches.length!==1){start=null;return;}
+    const touch=event.touches[0];
+    const dx=Math.abs(touch.clientX-start.x),dy=Math.abs(touch.clientY-start.y);
+    if(!start.horizontal){
+      if(dy>12&&dy>dx){start=null;return;}
+      if(dx<12||dx<=dy*1.4)return;
+      start.horizontal=true;
+    }
+    if(event.cancelable)event.preventDefault();
+  },{passive:false});
+  view.addEventListener('touchend',event=>{
+    const gesture=start;
+    start=null;
+    if(!gesture||!gesture.horizontal||blocked()||S.tab!==gesture.tab||event.changedTouches.length!==1)return;
+    const touch=event.changedTouches[0], dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
+    if(Math.abs(dx)<54||Math.abs(dx)<=Math.abs(dy)*1.4)return;
+    if(event.cancelable)event.preventDefault();
+    const [key,...pages]=SWIPE_PAGES[gesture.tab];
+    switchSubpage(gesture.tab,pages.indexOf(S[key])+(dx<0?1:-1));
+  },{passive:false});
+  view.addEventListener('touchcancel',()=>{start=null;},{passive:true});
 }
 function showPending(){
   S.tab='home';
@@ -854,8 +729,8 @@ function getFilteredTxns(){
 function renderCalAndFilter(){
   const head = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div class="seg">
-      <button class="${S.calSub==='cal'?'on':''}" onclick="S.calSub='cal';render()">猪猪印章日历</button>
-      <button class="${S.calSub==='list'?'on':''}" onclick="S.calSub='list';render()">账单筛选与搜索</button>
+      <button class="${S.calSub==='cal'?'on':''}" onclick="switchSubpage('cal',0)">猪猪印章日历</button>
+      <button class="${S.calSub==='list'?'on':''}" onclick="switchSubpage('cal',1)">账单筛选与搜索</button>
     </div>
     <span style="font-size:11px;color:var(--muted);font-weight:600"><button class="qbtn" onclick="shiftMonth(-1)">‹</button> ${S.calMonth} <button class="qbtn" onclick="shiftMonth(1)">›</button></span>
   </div>`;
@@ -869,7 +744,7 @@ function renderCalAndFilter(){
       const mood=recorded?getMood(date):null;
       if(mood==='happy') hCnt++;
       cells += `<div class="cal-c ${d===S.selDay?'sel':''} ${date===TODAY?'today':''}" onclick="S.selDay=${d};render()">
-        ${mood?stp(mood,32):'<svg width="32" height="23" aria-hidden="true"><use href="#stamp-empty" width="32" height="23"/></svg>'}
+        ${mood?stp(mood,32):''}
         <span class="dl num">${d}</span>
       </div>`;
     }
@@ -1269,8 +1144,8 @@ function jumpTrendCategory(category,direction){
 function renderInsights(){
   const topSw = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div class="seg">
-      <button class="${S.statsSub==='overview'?'on':''}" onclick="S.statsSub='overview';render()">趋势与圆环图</button>
-      <button class="${S.statsSub==='worth'?'on':''}" onclick="S.statsSub='worth';render()">这笔值不值</button>
+      <button class="${S.statsSub==='overview'?'on':''}" onclick="switchSubpage('stats',0)">趋势与圆环图</button>
+      <button class="${S.statsSub==='worth'?'on':''}" onclick="switchSubpage('stats',1)">这笔值不值</button>
     </div>
   </div>`;
 
@@ -1349,7 +1224,7 @@ function renderInsights(){
         <div style="position:relative;width:152px;height:152px;flex:none">
           <svg width="152" height="152" viewBox="0 0 152 152">${arcs||'<circle cx="76" cy="76" r="56" fill="none" stroke="#eeeae4" stroke-width="24"/>'}</svg>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-            ${dTotal?dayStamp(TODAY,34):''}
+            ${stp(hasRecordedDay(TODAY)?getMood(TODAY):'happy',34)}
             <b class="num" style="font-size:14px;font-weight:800;margin-top:2px">¥${fmtS(dTotal)}</b>
             <span style="font-size:9.5px;color:var(--muted)">总${dMode}</span>
           </div>
@@ -1373,8 +1248,8 @@ function renderInsights(){
 }
 
 /* ==================== 5. 我的 / 自动记账 / 陪伴纪念与数据备份 ==================== */
-function actionCard(icon,title,description,action,tone=''){
-  return `<button type="button" class="action-card" onclick="${action}">
+function actionCard(icon,title,description,action,tone='',warning=false){
+  return `<button type="button" class="action-card${warning?' permission-warning':''}" onclick="${action}">
     <span class="action-icon ${tone}" aria-hidden="true">${ico(icon,18)}</span>
     <span class="action-copy"><b>${title}</b><small>${description}</small></span>
     <span class="action-arrow" aria-hidden="true">›</span>
@@ -1389,7 +1264,7 @@ function renderAutoAndMine(){
     <div class="dark-guard">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <span style="font-size:10.5px;background:rgba(255,255,255,.16);padding:2.5px 9px;border-radius:99px">${S.autoGuard?(S.listening?'本地离线值班中':'已开启 · 等待授权或连接'):'已暂停自动监听'}</span>
+          <span style="font-size:10.5px;background:rgba(255,255,255,.16);padding:2.5px 9px;border-radius:99px">${S.autoGuard?(S.listening?'本地离线值班中':'暂无正常监听的渠道'):'已暂停自动监听'}</span>
           <b style="display:block;font-size:19px;margin-top:7px">已自动记下 ${autoCnt} 笔</b>
           <span style="font-size:11px;opacity:.82">微信+银行短信防重合并 ${mergeCnt} 笔 · 已学 ${Object.keys(S.rules).length} 条规则</span>
         </div>
@@ -1405,26 +1280,72 @@ function renderAutoAndMine(){
 
     <div class="sec-hd"><b>监听渠道开关</b><span onclick="Ledger.configure('notification')">通知授权</span></div>
     <div class="card" style="padding:2px 14px">
-      ${[['wechat','微信支付通知','付款/红包/退款秒入账'],['alipay','支付宝通知','扫码与乘车码自动归类'],['sms','银行动账短信','招行和建行动账识别'],['unionpay','云闪付通知','付款通知自动识别']].map(([k,t,sub])=>`
-        <div class="ent" onclick="toggleChannel('${k}')">
-          <div class="m"><b>${t}</b><span>${sub}</span></div>
-          <div class="sw ${S.channels[k]?'':'off'}"></div>
-        </div>
-      `).join('')}
+      ${LISTENING_CHANNELS.map(renderListeningChannel).join('')}
     </div>
+    <div class="sec-hd"><b>权限与后台运行</b></div>
+    <div class="action-stack">${renderLedgerPermissions()}</div>
     <div class="sec-hd"><b>补充数据来源</b></div>
     <div class="action-stack">
-      ${actionCard('bolt','短信授权','读取银行动账短信',"Ledger.configure('sms')")}
       ${actionCard('backup','导入微信 / 支付宝账单','从手机中选择导出的账单文件',"Ledger.importFile('bills')",'mint')}
     </div>
   `;
 }
 
 /* ==================== 自动记账解析与模拟场景 ==================== */
+const LISTENING_CHANNELS=[
+  ['wechat','微信支付通知'],['alipay','支付宝通知'],
+  ['sms','银行动账短信'],['unionpay','云闪付通知']
+];
+function renderLedgerPermissions(){
+  const {notification,sms,reminders,battery}=S.permissions||{};
+  const reminderStatus={
+    active:'已授权',off:'记账提醒已关闭，点击启用',
+    permission:'未授权，无法发送记账提醒',
+    'channel-blocked':'系统已关闭记账提醒通知类别，点击设置'
+  }[reminders];
+  return [
+    actionCard('bolt','通知读取权',notification?'已授权':'未授权，无法监听付款通知',"Ledger.configure('notification')",'',!notification),
+    actionCard('bolt','短信权限',sms==='active'?'已授权':sms==='partial'?'短信权限不完整，点击授权':'未授权，无法读取银行动账短信',"Ledger.configure('sms')",'',sms!=='active'),
+    actionCard('cal','记账提醒',reminderStatus,"Ledger.configure('reminders')",'',reminders!=='active'),
+    actionCard('bolt','后台运行',battery?'已设为不限制':'电池优化开启，后台监听可能中断',"Ledger.configure('battery')",'',!battery)
+  ].join('');
+}
+function listeningState(channel){
+  return (S.channelStatuses||{})[channel]||'off';
+}
+function channelHint(channel,state){
+  return {
+    active:'正在监听',off:'已关闭',paused:'自动记账总开关已暂停',
+    permission:channel==='sms'?'未授权短信权限':'未开启通知读取权',
+    partial:'短信权限不完整',disabled:'通知监听已停用',disconnected:'已授权，通知监听未连接'
+  }[state];
+}
+function channelAction(channel,state){
+  if(channel==='sms' && (state==='permission'||state==='partial'))return ['去授权','sms'];
+  if(state==='permission')return ['去授权','notification'];
+  if(state==='disconnected'||state==='disabled')return ['重试','notification-retry'];
+  return null;
+}
+function renderListeningChannel([channel,name]){
+  const state=listeningState(channel), action=channelAction(channel,state);
+  const enabled=Boolean(S.channels[channel]), pending=enabled&&state!=='active';
+  return `<div class="ent channel-row">
+    <div class="m"><b>${name}</b><span class="${pending?'channel-warning':''}" role="status">${channelHint(channel,state)}</span></div>
+    <div class="channel-tools">
+      ${action?`<button class="qbtn" onclick="Ledger.configure('${action[1]}')" aria-label="${name} ${action[0]}">${action[0]}</button>`:''}
+      <button class="sw ${pending?'pending':enabled?'':'off'}" role="switch" aria-checked="${enabled}" aria-label="${name}" onclick="toggleChannel('${channel}')"></button>
+    </div>
+  </div>`;
+}
 function toggleChannel(channel){
   S.channels[channel]=!S.channels[channel];
   const enabled=S.channels[channel];
-  if(save()&&enabled)Ledger.configure(channel==='sms'?'sms':'notification');
+  if(!save()||!enabled)return;
+  const state=listeningState(channel);
+  if(state==='active')return;
+  toast(channelHint(channel,state));
+  const action=channelAction(channel,state);
+  if(action)Ledger.configure(action[1]);
 }
 function showBanner(ic,bg,app,msg,tag){
   const b = document.getElementById('os-banner');
@@ -1468,7 +1389,6 @@ function openCompanionSheet(){
 
 let davBusy=false;
 function openBackupSheet(tab='local'){
-  const config=tab==='webdav'?JSON.parse(Ledger.webDavConfig()):{};
   document.getElementById('sheet-root').innerHTML=`<div class="mask" onclick="if(event.target===this)closeSheet()"><section class="sheet" role="dialog" aria-modal="true" aria-label="备份与恢复">
     <div class="backup-heading">
       <h3>备份与恢复</h3>
@@ -1488,23 +1408,66 @@ function openBackupSheet(tab='local'){
         </div>
       </div>`:`
       <form class="dav-form" id="dav-form" onsubmit="return false" autocomplete="off">
-        <label>服务器目录<input id="dav-address" type="url" inputmode="url" placeholder="https://示例地址/dav/账本/" value="${esc(config.address)}"></label>
+        <label>服务器目录<input id="dav-address" type="url" inputmode="url" placeholder="https://示例地址/dav/账本/" oninput="renderDavPassword()"></label>
         <div class="backup-columns">
-          <label>用户名<input id="dav-user" type="text" autocapitalize="off" value="${esc(config.user)}"></label>
-          <label>密码或应用密码<input id="dav-pass" type="password" autocomplete="off" autocapitalize="off"></label>
+          <label>用户名<input id="dav-user" type="text" autocapitalize="off" oninput="renderDavPassword()"></label>
+          <label>密码或应用密码
+            <span class="dav-password" dir="ltr">
+              <input id="dav-pass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="dav-help"
+                oninput="this.dataset.edited='true';renderDavPassword()" onchange="renderDavPassword()" onfocus="renderDavPassword()" onscroll="scrollDavPassword(this)">
+              <span class="dav-password-mask" id="dav-password-mask" aria-hidden="true"><span></span></span>
+            </span>
+          </label>
         </div>
-        <p class="dav-help">备份保存在 KongyeLedger 文件夹。离开此页后需重新输入密码。</p>
+        <p class="dav-help" id="dav-help">备份保存在 KongyeLedger 文件夹。操作成功后，密码会加密保存在本机。</p>
         <p class="dav-status" id="dav-status" role="status">${davBusy?'正在处理…':''}</p>
         <div class="backup-actions">
-          <button type="button" class="cta-btn ghost" data-dav-button onclick="requestWebDav('test')" ${davBusy?'disabled':''}>测试连接</button>
+          <button type="button" class="cta-btn ghost" onclick="requestWebDav('test')">测试连接</button>
           <div class="backup-columns">
-            <button type="button" class="cta-btn" data-dav-button onclick="confirmWebDav('upload')" ${davBusy?'disabled':''}>上传备份</button>
-            <button type="button" class="cta-btn ghost" data-dav-button onclick="confirmWebDav('restore')" ${davBusy?'disabled':''}>恢复账本</button>
+            <button type="button" class="cta-btn" onclick="confirmWebDav('upload')">上传备份</button>
+            <button type="button" class="cta-btn ghost" onclick="confirmWebDav('restore')">恢复账本</button>
           </div>
         </div>
         <div id="dav-confirm"></div>
       </form>`}
   </section></div>`;
+  if(tab==='webdav'){
+    fillDavForm();
+    updateDavControls();
+  }
+}
+function fillDavForm(){
+  const config=JSON.parse(Ledger.webDavConfig());
+  const address=document.getElementById('dav-address');
+  const user=document.getElementById('dav-user');
+  const password=document.getElementById('dav-pass');
+  address.value=address.defaultValue=config.address;
+  user.value=user.defaultValue=config.user;
+  password.value='';
+  delete password.dataset.edited;
+  password.dataset.saved=String(config.hasPassword);
+  renderDavPassword();
+}
+function useSavedDavPassword(input){
+  const address=document.getElementById('dav-address');
+  const user=document.getElementById('dav-user');
+  return input.dataset.saved==='true' && !input.value && !input.dataset.edited &&
+    address.value.trim()===address.defaultValue && user.value.trim()===user.defaultValue;
+}
+function updateDavControls(){
+  document.querySelectorAll('#dav-form input,#dav-form button').forEach(control=>{control.disabled=davBusy;});
+}
+function scrollDavPassword(input){
+  const mask=document.getElementById('dav-password-mask');
+  if(mask)mask.scrollLeft=input.scrollLeft;
+}
+function renderDavPassword(){
+  const input=document.getElementById('dav-pass');
+  const mask=document.getElementById('dav-password-mask');
+  if(!mask)return;
+  mask.firstElementChild.textContent='•'.repeat(useSavedDavPassword(input)?8:Array.from(input.value).length);
+  scrollDavPassword(input);
+  requestAnimationFrame(()=>scrollDavPassword(input));
 }
 function confirmWebDav(action){
   if(davBusy)return;
@@ -1520,24 +1483,25 @@ function requestWebDav(action){
   if(davBusy)return;
   const address=document.getElementById('dav-address').value.trim();
   const user=document.getElementById('dav-user').value;
-  const password=document.getElementById('dav-pass').value;
+  const password=document.getElementById('dav-pass');
   const status=document.getElementById('dav-status');
   document.getElementById('dav-confirm').innerHTML='';
   if(!address){status.textContent='请填写服务器目录';status.classList.add('error');document.getElementById('dav-address').focus();return;}
   davBusy=true;
   status.textContent='正在处理…';
   status.classList.remove('error');
-  document.querySelectorAll('[data-dav-button]').forEach(button=>{button.disabled=true;});
-  Ledger.webDav(action,address,user,password);
+  updateDavControls();
+  Ledger.webDav(action,address,user,password.value,useSavedDavPassword(password));
 }
-function finishWebDav(success,message){
+function finishWebDav(success,message,settingsSaved){
   davBusy=false;
   if(success)syncLedger();
   const status=document.getElementById('dav-status');
   if(!status){toast(message);return;}
+  if(settingsSaved)fillDavForm();
   status.textContent=message;
   status.classList.toggle('error',!success);
-  document.querySelectorAll('[data-dav-button]').forEach(button=>{button.disabled=false;});
+  updateDavControls();
 }
 function exportJsonBackup(){Ledger.exportFile('json');}
 function exportCsvFile(){Ledger.exportFile('csv');}
@@ -1696,19 +1660,18 @@ function openBudgetSheet(){
   </div></div>`;
 }
 
-// 初始化直接渲染主屏幕，绝不遮挡
 function finishStartup(deadline){
   if(document.getElementById('phone').offsetHeight === 0){
     if(performance.now() >= deadline) Ledger.startupFailed();
     else requestAnimationFrame(() => finishStartup(deadline));
     return;
   }
-  startSplash();
   Ledger.ready();
 }
 
 try {
   render();
+  bindSubpageSwipe();
   finishStartup(performance.now() + 5000);
   const refreshDate=()=>{
     if(!document.hidden && dateKey(new Date())!==TODAY)syncLedger();

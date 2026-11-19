@@ -1,0 +1,8 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ledger_launch_background" />
+    <item
+        android:drawable="@drawable/v8_happy"
+        android:gravity="center"
+        android:width="@dimen/ledger_splash_mascot_width"
+        android:height="@dimen/ledger_splash_mascot_height" />
+</layer-list>
