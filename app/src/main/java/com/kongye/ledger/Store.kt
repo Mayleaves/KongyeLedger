@@ -162,14 +162,45 @@ class Store private constructor(val ctx:Context) {
   set("categoryBudget:${cycle(date).first}:$category",amount.toString())
  }
 
- private fun calculatedQuota(date:LocalDate,entries:List<Txn>):Long {
-  val(start,end)=cycle(date)
-  val used=entries.filter{it.status!="已忽略" && day(it.time)>=start && day(it.time)<date}.sumOf(::netExpense)
-  val total=setting("budget","300000").toLongOrNull()?:300000
-  return ((total-used)/java.time.temporal.ChronoUnit.DAYS.between(date,end)).coerceAtLeast(0)
+ internal fun budgetLimits(): Map<BudgetPeriod, Long> = BudgetPeriod.entries.associateWith { period ->
+  val fallback = if (period == BudgetPeriod.MONTH) 300_000L else 0L
+  setting(period.key).toLongOrNull()?.takeIf { it >= 0 } ?: fallback
  }
- fun quota(date:LocalDate,entries:List<Txn> = txns()):Long =
-   setting("quota:$date").toLongOrNull() ?: calculatedQuota(date,entries)
+
+ internal fun budgetSpent(date: LocalDate, entries: List<Txn>): Map<BudgetPeriod, Long> =
+  BudgetPeriod.entries.associateWith { period ->
+   val (start, _) = period.bounds(date, ::cycle)
+   budgetExpenses(start, date.plusDays(1), entries).coerceAtLeast(0)
+  }
+
+ @Synchronized internal fun setBudgetLimits(limits: Map<BudgetPeriod, Long>) {
+  require(limits.keys == BudgetPeriod.entries.toSet() && limits.values.all { it in 0..999_999_999_999L })
+  val today = LocalDate.now()
+  val basis = calculateBudgetBasis(today, txns(), limits)
+  prefs = runBlocking {
+   ctx.settingsStore.edit { values ->
+    limits.forEach { (period, amount) -> values[stringPreferencesKey(period.key)] = amount.toString() }
+    values[stringPreferencesKey("quota:$today")] = (basis?.daily ?: 0L).toString()
+   }
+  }
+  changed()
+ }
+
+ private fun budgetExpenses(start: LocalDate, end: LocalDate, entries: List<Txn>): Long =
+  entries.filter { it.status != "已忽略" && day(it.time) in start..<end }.sumOf(::netExpense)
+
+ internal fun calculateBudgetBasis(date: LocalDate, entries: List<Txn>, limits: Map<BudgetPeriod, Long> = budgetLimits()): DailyBudgetBasis? =
+  limits.asSequence().filter { it.value > 0 }.map { (period, amount) ->
+   val (start, end) = period.bounds(date, ::cycle)
+   val used = budgetExpenses(start, date, entries)
+   DailyBudgetBasis(period, amount, used, java.time.temporal.ChronoUnit.DAYS.between(date, end))
+  }.minByOrNull { it.daily }
+
+ fun quota(date: LocalDate, entries: List<Txn> = txns()): Long {
+  // Old daily snapshots still apply to past dates. Today's amount reflects corrected and imported bills.
+  if (date < LocalDate.now()) setting("quota:$date").toLongOrNull()?.let { return it }
+  return calculateBudgetBasis(date, entries)?.daily ?: 0L
+ }
  private fun computedMood(date:LocalDate,spent:Long,entries:List<Txn>):String {
   val limit = quota(date,entries)
   val threshold = setting("threshold","80").toIntOrNull()?.coerceIn(50,100)?:80
@@ -198,7 +229,10 @@ class Store private constructor(val ctx:Context) {
    if(setting("finalMood:$date").isBlank())updates["finalMood:$date"]=computedMood(date,byDay[date].orEmpty().sumOf(::netExpense),entries)
    date=date.plusDays(1)
   }
-  if(setting("quota:$today").isBlank())updates["quota:$today"]=calculatedQuota(today,entries).toString()
+  if(setting("quota:$today").isBlank()) {
+   val basis = calculateBudgetBasis(today, entries)
+   updates["quota:$today"] = (basis?.daily ?: 0L).toString()
+  }
   updates["snapshotDate"]=today.toString()
   prefs=runBlocking{ctx.settingsStore.edit{ values->updates.forEach{(key,value)->values[stringPreferencesKey(key)]=value} }}
   changed()

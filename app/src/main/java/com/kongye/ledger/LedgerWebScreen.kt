@@ -2,7 +2,6 @@ package com.kongye.ledger
 
 import android.Manifest
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import android.service.notification.NotificationListenerService
 import android.util.Log
 import android.view.View
 import android.webkit.ConsoleMessage
@@ -118,10 +116,12 @@ internal fun LedgerWebScreen(
     var attempt by remember { mutableIntStateOf(0) }
     val pageAttempt = attempt
     val revision by store.revision.collectAsState()
+    val listenerConnected by PaymentListener.connection.collectAsState()
     val entry = activity.entryIntent
     val reportProgress by rememberUpdatedState(onStartupProgress)
     val presentLedger by rememberUpdatedState(onPresented)
     var davInProgress by remember { mutableStateOf(false) }
+    var reconnecting by remember { mutableStateOf(false) }
     val davSettings = remember(activity) { LedgerDavSettings(activity.applicationContext) }
     val installedVersion = remember(activity) {
         activity.packageManager.getPackageInfo(activity.packageName, 0).versionName.orEmpty()
@@ -271,10 +271,16 @@ internal fun LedgerWebScreen(
             result(failure)
         }
     }
-    fun openNotificationSettings() = openSettings(
-        Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS),
-        "无法打开通知授权，请在系统设置中开启空叶记账的通知读取权。"
-    )
+    fun openNotificationSettings() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            val detail = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).putExtra(
+                Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                paymentListenerComponent(activity).flattenToString()
+            )
+            if (runCatching { activity.startActivity(detail) }.isSuccess) return
+        }
+        openSettings(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS), "无法打开通知授权，请在系统设置中开启空叶记账的通知读取权。")
+    }
     val permissionRequests = activity.getSharedPreferences("ledger_permissions", Context.MODE_PRIVATE)
     fun requestSmsAccess() {
         if (smsListeningStatus(activity) == "active") {
@@ -310,20 +316,27 @@ internal fun LedgerWebScreen(
         openSettings(intent.putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName), "无法打开系统通知设置。")
     }
     fun retryNotificationListener() {
+        if (reconnecting) return
         if (store.setting("notifications", "true") != "true") store.set("notifications", "true")
         if (!notificationAccess(activity)) {
             openNotificationSettings()
             return
         }
-        try {
-            NotificationListenerService.requestRebind(ComponentName(activity, PaymentListener::class.java))
-        } catch (_: SecurityException) {
-            result("通知监听重连失败，请检查通知读取权。")
-            return
-        }
+        reconnecting = true
+        script("setListenerReconnect(true);")
         scope.launch {
-            delay(1800)
-            result(if (PaymentListener.connected && notificationAccess(activity)) "通知监听已连接。" else "通知监听仍未连接，可在通知授权中关掉再重新开启。")
+            val message = try {
+                if (PaymentListener.reconnect(activity.applicationContext)) "通知监听已连接。"
+                else "系统尚未连接通知监听，请打开授权页，关闭再开启通知读取权。"
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: RuntimeException) {
+                "系统无法重启通知监听，请打开授权页检查通知读取权。"
+            } finally {
+                reconnecting = false
+                script("setListenerReconnect(false);")
+            }
+            result(message)
         }
     }
     val bridge = remember(pageAttempt) {
@@ -396,7 +409,7 @@ internal fun LedgerWebScreen(
             loadFailed = true
         }
     }
-    LaunchedEffect(revision, loaded, loadFailed) { if (loaded && !loadFailed) script("syncLedger();") }
+    LaunchedEffect(revision, listenerConnected, loaded, loadFailed) { if (loaded && !loadFailed) script("syncLedger();") }
     LaunchedEffect(entry, loaded, loadFailed) {
         if (!loaded || loadFailed || entry == null) return@LaunchedEffect
         when {
@@ -539,9 +552,11 @@ private class LedgerWebBridge(
                 stamps.put(key.name.removePrefix("mood:"), value)
             }
         }
-        val quotas = JSONObject()
-        (entries.map { day(it.time) }.toSet() + today).forEach { date ->
-            quotas.put(date.toString(), store.quota(date, entries))
+        val todayBasis = store.calculateBudgetBasis(today, entries)
+        val todayQuota = todayBasis?.daily ?: 0L
+        val quotas = JSONObject().put(today.toString(), todayQuota)
+        entries.map { day(it.time) }.toSet().forEach { date ->
+            if (date != today) quotas.put(date.toString(), store.quota(date, entries))
         }
         val switches = JSONObject()
         channels.forEach { (key, pkg) -> switches.put(key, store.notificationChannelEnabled(pkg)) }
@@ -567,8 +582,10 @@ private class LedgerWebBridge(
         }
         JSONObject().put("txns", JSONArray(entries.map(::toWeb)))
             .put("firstMetDate", store.setting("firstMetDate", today.toString()))
-            .put("budget", store.setting("budget", "300000").toLongOrNull() ?: 300000L)
-            .put("quota", store.quota(today, entries))
+            .put("budgetLimits", JSONObject(store.budgetLimits().mapKeys { it.key.id }))
+            .put("budgetSpent", JSONObject(store.budgetSpent(today, entries).mapKeys { it.key.id }))
+            .put("quota", todayQuota)
+            .put("quotaDetails", todayBasis?.json() ?: JSONObject.NULL)
             .put("quotas", quotas)
             .put("stamps", stamps)
             .put("rules", rules)
@@ -620,8 +637,8 @@ private class LedgerWebBridge(
                 require(date <= LocalDate.now())
                 store.set("firstMetDate", date.toString())
             }
-            if (settings.has("budget")) {
-                store.set("budget", settings.getLong("budget").also { require(it > 0) }.toString())
+            settings.optJSONObject("budgetLimits")?.let { limits ->
+                store.setBudgetLimits(BudgetPeriod.entries.associateWith { limits.getLong(it.id) })
             }
             if (settings.has("autoGuard")) store.set("autoGuard", settings.getBoolean("autoGuard").toString())
             settings.optJSONObject("channels")?.let { switches ->

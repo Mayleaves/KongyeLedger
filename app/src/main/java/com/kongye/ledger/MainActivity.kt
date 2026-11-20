@@ -164,6 +164,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshLedger(store: Store) {
+        if (store.setting("autoGuard", "true") == "true" && store.setting("notifications", "true") == "true") {
+            PaymentListener.requestConnection(applicationContext)
+        }
         store.changed()
         Thread { runCatching { store.takeDaySnapshot(); readSms(this) } }.start()
     }

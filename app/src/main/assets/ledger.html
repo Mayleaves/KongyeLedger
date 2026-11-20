@@ -43,57 +43,131 @@ body{font-family:"PingFang SC","HarmonyOS Sans SC","MiSans","Microsoft YaHei UI"
 .burst-coin{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;animation:coinFountain .74s cubic-bezier(.18,.88,.38,1) forwards}
 @keyframes coinFountain{0%{opacity:1;transform:translate(0,0) scale(.5)}45%{opacity:1;transform:translate(calc(var(--dx)*.66),var(--dy)) scale(1.14) rotate(80deg)}100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 105px)) scale(.7) rotate(180deg)}}
 
-.app-top{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 6px;flex:none;gap:8px;z-index:15}
-.app-top b{font-size:19px;font-weight:800;display:block;line-height:1.15}
-.comp-pill{display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2.5px 9px;border-radius:99px;background:var(--card-soft);border:var(--border);font-size:10.5px;font-weight:600;color:var(--ink2);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.03)}
-.ibtn{width:32px;height:32px;border-radius:11px;background:var(--card);backdrop-filter:blur(var(--blur));border:var(--border);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;color:var(--ink2);transition:transform .14s var(--jelly)}
+.app-top{display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:8px 18px 12px;flex:none;gap:10px;z-index:15}
+.app-top b{font-size:23px;font-weight:800;display:block;line-height:1.2}
+.comp-pill{display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 9px;border-radius:99px;background:var(--card-soft);border:var(--border);font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+.ibtn{width:38px;height:38px;border-radius:12px;background:var(--card);backdrop-filter:blur(var(--blur));border:var(--border);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;color:var(--ink2);transition:transform .14s var(--jelly)}
 .ibtn:active{transform:scale(.9)}
 
-.main-view{flex:1;position:relative;overflow:hidden}
-.scroll-pane{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:4px 15px 92px;scrollbar-width:none}
+.main-view{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.swipe-pages,.swipe-pages .scroll-pane{touch-action:pan-y pinch-zoom}
+.subpage-nav{flex:none;padding:0 16px 12px}
+.subpage-nav:empty{display:none}
+.subpage-nav .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-radius:15px;padding:4px;gap:4px}
+.subpage-nav .seg button{min-height:42px;border-radius:11px;font-size:14px;padding:5px;white-space:normal}
+.subpage-nav button:not(.on){color:var(--ink2)}
+.scroll-pane{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:2px 16px 92px;scrollbar-width:none}
 .scroll-pane::-webkit-scrollbar{display:none}
 .card{background:var(--card);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:13px 15px}
 .seg{display:inline-flex;background:var(--track);border-radius:99px;padding:3px;gap:2px}
-.seg button{font:inherit;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;border:0;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button{font:inherit;font-size:13px;font-weight:600;padding:6px 10px;border-radius:99px;border:0;background:transparent;color:var(--ink2);cursor:pointer;white-space:nowrap}
 .seg button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-.qbtn{font:inherit;font-size:11px;font-weight:600;padding:4.5px 10px;border-radius:99px;border:1px solid var(--div);background:rgba(255,255,255,.88);color:var(--ink2);white-space:nowrap;cursor:pointer;transition:transform .12s}
+.qbtn{font:inherit;font-size:13px;font-weight:600;padding:6px 10px;border-radius:99px;border:1px solid var(--div);background:rgba(255,255,255,.88);color:var(--ink2);white-space:nowrap;cursor:pointer;transition:transform .12s}
 .qbtn:active{transform:scale(.93)}.qbtn.on{background:var(--cta);color:#fff;border-color:transparent;font-weight:700}
 .prog{height:8px;border-radius:99px;background:var(--track);overflow:hidden;position:relative}
 .prog>i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--prog);transition:width .32s var(--spring)}
 
 .hero{position:relative;height:224px;margin-top:2px}
-.say{position:absolute;left:50%;top:2px;transform:translateX(-50%);background:var(--card);border:var(--border);border-radius:99px;padding:4.5px 13px;font-size:11.5px;font-weight:600;color:var(--ink2);white-space:nowrap;z-index:3;box-shadow:var(--shadow)}
-.pig-box{position:absolute;left:50%;top:34px;transform:translateX(-50%);width:170px;height:170px;display:grid;place-items:center;cursor:pointer;filter:drop-shadow(0 10px 16px rgba(218,116,106,.14))}
+.say{position:absolute;left:50%;top:2px;transform:translateX(-50%);width:max-content;max-width:100%;background:var(--card);border:var(--border);border-radius:18px;padding:6px 12px;font-size:13px;line-height:1.4;font-weight:600;color:var(--ink2);text-align:center;z-index:3;box-shadow:var(--shadow);overflow-wrap:anywhere}
+.pig-box{position:absolute;left:50%;top:41px;transform:translateX(-50%);width:170px;height:170px;display:grid;place-items:center;cursor:pointer;filter:drop-shadow(0 10px 16px rgba(218,116,106,.14))}
 .pupu-float{animation:pFloat 2.2s ease-in-out infinite alternate;transform-origin:center bottom}
 @keyframes pFloat{from{transform:translateY(-3px)}to{transform:translateY(3px)}}
 .orb{position:absolute;border-radius:50%;display:grid;place-items:center;box-shadow:0 5px 14px rgba(120,95,60,.09);cursor:pointer;transition:transform .15s var(--jelly)}
-.orb:hover{transform:scale(1.07)}.orb small{position:absolute;bottom:-15px;font-size:9.5px;font-weight:600;color:var(--muted);white-space:nowrap}
-.bento2{display:grid;grid-template-columns:1.15fr 1fr;gap:9px;margin-top:4px}
+.orb:hover{transform:scale(1.07)}.orb small{position:absolute;bottom:-18px;font-size:11px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.home-page,.flow-page,.insights-page{display:grid;gap:14px;min-width:0}
+.home-page .sec-hd{margin-top:0;margin-bottom:8px;gap:6px}
+.bento2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px}
+.bento2>.card{min-width:0;padding:14px 12px}
+.home-budget{display:grid;align-content:space-between;gap:7px}
+.home-budget-head{display:flex;align-items:center;justify-content:space-between;gap:4px;color:var(--ink2);font-size:13px;font-weight:600}
+.home-budget-edit{min-height:36px;flex:none;padding:0 4px;border:0;border-radius:9px;background:transparent;color:var(--ink2);font:inherit;font-size:12px;cursor:pointer}
+.home-quota{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px;min-width:0;min-height:42px;padding:7px;border:0;border-radius:11px;background:#f5f2eb;color:var(--ink2);font:inherit;font-size:12px;text-align:left;cursor:pointer}
+.home-quota b{color:var(--ink);font-size:13px;text-align:right;overflow-wrap:anywhere}
+.home-quota svg{display:block;color:var(--muted)}
+.home-quota:active,.home-budget-edit:active{background:#eee8dc}
+.home-budget button:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
+.budget-balance{font-size:clamp(19px,6.1vw,26px);font-weight:800;line-height:1.1;overflow-wrap:anywhere}
+.budget-balance.long{font-size:17px}
+.home-budget-setup{min-height:36px;justify-self:start}
+.home-trend-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:3px 5px;font-size:12px;font-weight:700;margin-bottom:8px}
 
 .sec-hd{display:flex;justify-content:space-between;align-items:center;margin:13px 3px 6px}
-.sec-hd b{font-size:13.5px;font-weight:700}.sec-hd span{font-size:11px;color:var(--muted);cursor:pointer}
+.sec-hd b{font-size:15px;font-weight:700}.sec-hd span{font-size:13px;color:var(--ink2);cursor:pointer}
 .ent{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--div);cursor:pointer}
 .ent:last-child{border-bottom:0}
-.ent .ico{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none}
+.ent .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
 body[data-style="meditation"] .ent .ico{border-radius:50%}
 .ent .m{flex:1;min-width:0}
-.ent .m b{font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ent .m span{font-size:10.5px;color:var(--muted);display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ent em{font-style:normal;font-weight:700;font-size:14px;white-space:nowrap}.ent em.in{color:var(--green)}
-.tag{font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:99px;background:rgba(245,178,64,.18);color:#8f5e14;flex:none}
+.ent .m b{font-size:15px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ent .m span{font-size:12px;color:var(--ink2);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ent .m b span{color:inherit;font-size:inherit;margin:0}
+.ent em{font-style:normal;font-weight:700;font-size:15px;white-space:nowrap}.ent em.in{color:var(--green)}
+.tag{font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:rgba(245,178,64,.18);color:#8f5e14;flex:none}
 .tag.auto{background:rgba(40,164,100,.13);color:#207d4c}.tag.merge{background:rgba(47,104,230,.12);color:#2958c8}
 
 .sbox{position:relative;display:flex;align-items:center}
-.sbox input{width:100%;padding:8.5px 32px;border-radius:99px;border:var(--border);background:#fff;box-shadow:var(--shadow);font:inherit;font-size:12px;color:var(--ink);outline:none}
+.sbox input{width:100%;min-width:0;min-height:46px;padding:9px 33px;border-radius:15px;border:var(--border);background:#fff;box-shadow:var(--shadow);font:inherit;font-size:14px;color:var(--ink);outline:none}
+.sbox input:focus-visible{outline:2px solid #a6bdf7;outline-offset:-2px}
+.sbox input::-webkit-search-cancel-button{display:none}
+.search-clear{position:absolute;right:5px;min-width:27px;height:32px;border:0;background:none;color:var(--ink2);font:inherit;cursor:pointer}
+.flow-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+.flow-results{display:grid;gap:11px}
+.flow-filter-button{min-height:46px;display:flex;align-items:center;gap:5px;border-radius:14px;padding:7px 10px;color:var(--ink2);background:var(--card)}
+.flow-filter-button.on{background:#eaf0ff;color:#2559cc;border-color:#d6e2ff}
+.flow-filter-button i{font-style:normal;font-size:10px}
+.flow-summary{display:flex;align-items:center;flex-wrap:wrap;gap:7px 12px;font-size:13px;font-weight:650;color:var(--ink2);padding:0 3px}
+.flow-summary .qbtn{margin-left:auto;color:#2958ae}
+.flow-selection{line-height:1.45;overflow-wrap:anywhere}
+.flow-filter-sheet{display:grid;gap:16px}
+.flow-filter-sheet .backup-heading{margin:0}
+.flow-filter-sheet fieldset{min-width:0;border:0}
+.flow-filter-sheet legend{font-size:14px;font-weight:700;margin-bottom:8px}
+.flow-filter-sheet .date-range{margin-top:9px}
+.flow-filter-options{display:flex;flex-wrap:wrap;gap:7px}
+.flow-filter-options .qbtn{min-height:36px;white-space:normal;max-width:100%;overflow-wrap:anywhere}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.calendar-head b{font-size:13px}
+.calendar-month{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;color:var(--ink2)}
+.calendar-month .qbtn{min-width:36px;min-height:36px;display:grid;place-items:center;padding:0}
 .frow{display:flex;align-items:center;gap:5px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
 .frow::-webkit-scrollbar{display:none}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px 2px;text-align:center}
 .cal-c{display:grid;grid-template-rows:23px auto;justify-items:center;align-items:center;gap:1px;padding:3.5px 0;border-radius:12px;cursor:pointer;border:1px solid transparent}
 .cal-c.sel{background:#fff;border-color:var(--div);box-shadow:0 3px 9px rgba(0,0,0,.05)}
-.cal-c .dl{grid-row:2;font-size:9.5px;color:var(--muted);font-weight:600;padding:0 5px;border-radius:99px}
+.cal-c .dl{grid-row:2;font-size:12px;color:var(--ink2);font-weight:600;padding:0 5px;border-radius:99px}
 .cal-c.today .dl{background:var(--cta);color:#fff}
 
-.dark-guard{background:linear-gradient(135deg,#3a476e,#2b3554);color:#fff;border-radius:24px;padding:15px 16px;position:relative;overflow:hidden}
+.mine-page{display:grid;gap:17px;padding-top:2px}
+.mine-hero{border-radius:24px;padding:15px 15px 5px;background:linear-gradient(140deg,#3a4b73,#2b3554);color:#fff;box-shadow:0 8px 20px rgba(43,53,84,.12)}
+.mine-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mine-hero-title{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700}
+.mine-hero-title svg{color:#d0ddff;flex:none}
+.mine-hero .sw:not(.off){background:#3573f6}
+.mine-hero .sw.off{background:#64708c!important}
+.mine-status{display:flex;align-items:baseline;gap:5px;margin-top:6px;color:#e0e8fb;font-size:13px;font-weight:600;line-height:1.45}
+.mine-status::before{content:"";width:6px;height:6px;flex:none;border-radius:50%;background:#b8c4df}
+.mine-status.active::before{background:#86e0b5}
+.mine-status.warning{color:#ffdfac}.mine-status.warning::before{background:#ffc978}
+.mine-count{margin-top:10px;font-size:13px;font-weight:600;color:#e0e8fb}
+.mine-count strong{font-size:29px;line-height:1;font-weight:800;color:#fff}
+.mine-manage{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding:8px 0;min-height:44px;border:0;border-top:1px solid #ffffff30;background:none;color:#fff;text-align:left;font:inherit;font-size:14px;font-weight:650;cursor:pointer}
+.mine-manage svg{flex:none;color:#d0ddff}
+.mine-manage:active{opacity:.75}
+.mine-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 3px;margin-bottom:8px}
+.mine-heading h2{font-size:15px;font-weight:750}
+.mine-version{font-size:12px;color:var(--ink2)}
+.mine-auto-meta{margin:8px 3px 0;font-size:12px;color:var(--ink2)}
+.mine-group{padding:2px 12px;border-radius:19px}
+.mine-row{display:flex;align-items:center;gap:11px;width:100%;min-height:58px;padding:9px 0;border:0;border-bottom:1px solid var(--div);background:transparent;color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.mine-row:last-child{border-bottom:0}
+.mine-row:active .action-copy{opacity:.72}
+.mine-row .action-icon{width:37px;height:37px;border-radius:11px}
+.mine-row .action-icon.sand{background:#f6ecdc;color:#8a632f}
+.mine-row .action-copy small{color:var(--ink2)}
+.mine-row.permission-warning .action-copy small{color:#8b5414;font-weight:650}
+.mine-row-arrow{display:flex;color:var(--muted);flex:none}
+.mine-back{display:flex;align-items:center;gap:9px;min-height:43px}
+.mine-back .ibtn{width:38px;height:38px}
 
 .sw{width:42px;height:24px;border-radius:99px;background:var(--green);position:relative;cursor:pointer;flex:none;transition:background .2s}
 
@@ -101,21 +175,22 @@ body[data-style="meditation"] .ent .ico{border-radius:50%}
 .sw.off{background:rgba(150,145,140,.3)!important}.sw.off::after{right:auto;left:3px}
 .sw.pending{background:#a16615!important}
 button.sw{border:0;padding:0}
-.channel-row{cursor:default}
+.channel-row{min-height:49px;cursor:default}
+.channel-row .m b{white-space:normal;overflow:visible}
 .channel-row .m .channel-warning{color:#8b5414;font-weight:650;white-space:normal}
 .channel-tools{display:flex;align-items:center;gap:7px;flex:none}
 .channel-tools .qbtn{color:#2659c2}
 
 .dock-wrap{position:absolute;left:0;right:0;bottom:0;padding:6px 15px 14px;pointer-events:none;z-index:30}
 .dock{pointer-events:auto;display:flex;align-items:center;justify-content:space-between;background:var(--dock);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.92);border-radius:26px;padding:5px 8px;box-shadow:0 12px 28px -6px rgba(45,40,35,.12)}
-.ditem{flex:1;height:44px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;font-size:10px;font-weight:500;color:var(--muted);position:relative}
+.ditem{flex:1;min-width:0;height:49px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-size:12px;font-weight:500;color:var(--ink2);position:relative;white-space:nowrap}
 .ditem.on{background:var(--dock-on);color:var(--cta);font-weight:700}
-.dadd{width:44px;height:44px;margin:0 4px;border-radius:50%;border:0;background:var(--cta);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:var(--cta-sh)}
+.dadd{flex:none;width:48px;height:48px;margin:0 4px;border-radius:50%;border:0;background:var(--cta);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:var(--cta-sh)}
 .ndot{position:absolute;top:5px;right:13px;width:6px;height:6px;border-radius:50%;background:var(--red)}
 
 .mask{position:absolute;inset:0;background:rgba(28,26,24,.35);backdrop-filter:blur(4px);z-index:65;display:flex;align-items:flex-end}
 .sheet{width:100%;max-height:88%;background:var(--canvas);border-radius:28px 28px 0 0;padding:14px 16px 24px;position:relative;overflow-y:auto;box-shadow:0 -12px 32px rgba(0,0,0,.14)}
-.cta-btn{font:inherit;width:100%;height:42px;border-radius:99px;border:0;background:var(--cta);color:#fff;font-size:13px;font-weight:700;box-shadow:var(--cta-sh);cursor:pointer}
+.cta-btn{font:inherit;width:100%;min-height:44px;border-radius:99px;border:0;background:var(--cta);color:#fff;font-size:14px;font-weight:700;box-shadow:var(--cta-sh);cursor:pointer}
 .cta-btn.ghost{background:#fff;color:var(--ink2);border:1px solid var(--div);box-shadow:none}
 .kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .kk{height:40px;border-radius:12px;background:#fff;display:grid;place-items:center;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.04)}
@@ -126,25 +201,23 @@ body{background:var(--canvas)}
 
  .sw:not(.off){background:var(--cta)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;transition-duration:1ms!important}}
-.empty{color:var(--muted);text-align:center;padding:14px;font-size:12px}
+.empty{color:var(--ink2);text-align:center;padding:14px;font-size:13px}
 .edit-field{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--div);font-size:13px}
 .edit-field input{min-width:0;width:60%;text-align:right;padding:5px;border:0;background:transparent;color:var(--ink);font:inherit}
 
 /* Shared controls for ledger dates, data sources and insights. */
 .action-card{width:100%;display:flex;align-items:center;text-align:left;gap:11px;padding:11px 13px;border:var(--border);border-radius:18px;background:var(--card);color:var(--ink);box-shadow:var(--shadow);font:inherit;cursor:pointer}
 .action-card:active,.date-chip:active,.date-nav:active{background:#e9efff}
-.action-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:#eaf0ff;color:var(--cta);flex:none}
+.action-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#eaf0ff;color:var(--cta);flex:none}
 .action-icon.mint{background:#e1f2e8;color:#287a53}
 .action-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
-.action-copy b{font-size:13px}
-.action-copy small{color:var(--muted);font-size:11px;line-height:1.4}
-.action-card.permission-warning .action-copy small{color:#8b5414;font-weight:650}
+.action-copy b{font-size:15px}
+.action-copy small{color:var(--ink2);font-size:13px;line-height:1.45}
 .action-arrow{font-size:19px;line-height:1;color:var(--cta)}
-.action-stack{display:grid;gap:8px}
-.date-chip{min-width:0;display:flex;align-items:center;gap:6px;border:1px solid rgba(47,104,230,.12);border-radius:14px;background:#edf2ff;color:#294b8a;font:inherit;font-size:12px;font-weight:650;padding:7px 10px;min-height:38px;cursor:pointer;text-align:left}
+.date-chip{min-width:0;display:flex;align-items:center;gap:6px;border:1px solid rgba(47,104,230,.12);border-radius:14px;background:#edf2ff;color:#294b8a;font:inherit;font-size:13px;font-weight:650;padding:7px 9px;min-height:40px;cursor:pointer;text-align:left}
 .date-chip svg{flex:none;color:var(--cta)}
 .date-chip-label{min-width:0;flex:1;white-space:nowrap}
-.date-chip small{display:block;color:#5f6e8b;font-size:10px;font-weight:550}
+.date-chip small{display:block;color:#5f6e8b;font-size:12px;font-weight:550}
 .date-range{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:2px 0}
 .date-range .date-chip{min-height:46px}
 .date-layer{position:absolute;inset:0;z-index:70;display:grid;place-items:center;padding:14px;background:#29253a62}
@@ -164,10 +237,15 @@ body{background:var(--canvas)}
 .date-day.chosen{background:var(--cta);color:white;font-weight:750}
 .date-day:disabled{color:#a9a49a;cursor:default}
 .date-footer{margin-top:12px}
-.date-footer .cta-btn{flex:1;height:36px}
-.trend-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.date-footer .cta-btn{flex:1}
+.trend-head,.donut-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px}
+.donut-head b{font-size:16px}
+.donut-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px;margin-top:12px}
+.donut-figure{position:relative;width:100%;max-width:152px;justify-self:center;aspect-ratio:1}
+.donut-figure>svg{display:block;width:100%;height:100%}
+.donut-label{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .trend-series,.trend-filters,.trend-periods{display:flex;flex-wrap:wrap;gap:5px}
-.trend-series button,.trend-filters button,.trend-periods button,.trend-period-button{font:inherit;font-size:11px;font-weight:700;padding:7px 8px;min-height:32px;border:1px solid var(--div);border-radius:12px;background:white;color:var(--ink2);cursor:pointer}
+.trend-series button,.trend-filters button,.trend-periods button,.trend-period-button{font:inherit;font-size:13px;font-weight:700;padding:7px 8px;min-height:36px;border:1px solid var(--div);border-radius:12px;background:white;color:var(--ink2);cursor:pointer}
 .trend-series button{display:flex;align-items:center;gap:5px;white-space:nowrap}
 .trend-series button[aria-pressed=true]{border-color:var(--series);color:var(--series);background:#f9fafc}
 .trend-series i{width:6px;height:6px;border-radius:50%;background:var(--series);display:inline-block}
@@ -179,12 +257,12 @@ body{background:var(--canvas)}
 .trend-periods button{font-size:13px;min-height:38px}
 .trend-periods button.on{background:#eaf0ff;color:#2559cc;border-color:#d6e2ff}
 .trend-range-apply{margin-top:10px}
-.trend-filters{margin-top:7px}
+.trend-filters{margin-top:10px;gap:8px}
 .trend-filters button{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 .trend-filters button.on{color:#2559cc;background:#eaf0ff}
-.trend-detail{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 8px;margin-top:8px;padding:7px 10px;border-radius:12px;background:#f6f4f0;font-size:11px}
+.trend-detail{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 9px;margin-top:11px;padding:9px 10px;border-radius:12px;background:#f6f4f0;font-size:13px}
 .trend-period-readout,.trend-values{display:flex;align-items:center;flex-wrap:wrap;gap:5px 7px}
-.trend-period-readout small{display:block;color:var(--muted);font-size:10px;margin-top:1px}
+.trend-period-readout small{display:block;color:var(--ink2);font-size:12px;margin-top:1px}
 .trend-values span{white-space:nowrap}
 .category-options{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
 .category-options .qbtn{min-height:33px}
@@ -219,6 +297,26 @@ body{background:var(--canvas)}
 .release-notes{margin:8px 0;color:var(--ink2);font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
 .update-links{display:flex;gap:6px 12px;flex-wrap:wrap;margin-top:11px}
 .update-links button{min-height:36px;padding:0 3px;background:none;border:0;color:var(--cta);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.ledger-empty{display:flex;align-items:center;gap:13px;padding:15px 13px;min-height:100px}
+.ledger-empty-art{flex:none;width:60px;height:60px;display:grid;place-items:center;border-radius:21px;background:radial-gradient(circle at 35% 25%,#fff6e4,#fde8e0 75%)}
+.ledger-empty-copy{min-width:0;display:grid;justify-items:start;gap:4px}
+.ledger-empty-copy b{font-size:15px}.ledger-empty-copy p{font-size:13px;color:var(--ink2);line-height:1.5}
+.ledger-empty-copy button{margin-top:3px;min-height:35px;background:#edf2ff;color:#2958ae;border:0}
+.budget-periods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:10px 0}
+.budget-periods button{min-height:34px;padding-inline:3px}
+.budget-card{display:grid;gap:8px;padding:12px 14px;background:var(--card);border:var(--border);border-radius:16px;margin-bottom:10px}
+.budget-card small{font-size:13px;color:var(--ink2);line-height:1.5}
+.budget-card input{width:100%;padding:7px 10px;color:var(--ink);background:var(--canvas);border:var(--border);border-radius:10px;font:inherit;font-size:16px}
+.channel-recovery{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;margin:0 0 7px;border-radius:13px;background:#fff2d9;color:#7c5419;font-size:11.5px;line-height:1.4}
+.worth-empty{display:grid;justify-items:center;gap:10px;text-align:center;padding:21px 18px 23px}
+.worth-empty-art{display:grid;place-items:center;width:124px;height:124px;background:radial-gradient(circle at 36% 26%,#fff6e4,#fde8e0 74%);border-radius:42px}
+.worth-empty h3{font-size:18px}.worth-empty p{font-size:14px;color:var(--ink2);line-height:1.55;max-width:265px}
+.worth-empty .cta-btn{margin-top:5px;max-width:200px}
+.quota-details{display:grid;gap:8px;margin:10px 0 12px}
+.quota-rows{padding:2px 12px;border-radius:14px;background:var(--card);border:var(--border)}
+.quota-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 9px;padding:9px 0;font-size:14px}
+.quota-row+.quota-row{border-top:1px solid var(--div)}.quota-row dt{color:var(--ink2)}.quota-row dd{margin-left:auto;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.quota-note{font-size:13px;color:var(--ink2);line-height:1.5}
 </style>
 </head>
 <body>
@@ -342,7 +440,7 @@ body{background:var(--canvas)}
 
     <div class="fx-layer" id="fx-layer"></div>
     <div class="app-top" id="app-top"></div>
-    <div class="main-view"><div class="scroll-pane" id="view"></div></div>
+    <div class="main-view" id="main-view"><nav class="subpage-nav" id="subpage-nav" aria-label="页面切换"></nav><div class="scroll-pane" id="view"></div></div>
     <div class="dock-wrap"><div class="dock" id="dock"></div></div>
     <div id="sheet-root"></div>
     <div id="date-root"></div>
@@ -373,6 +471,14 @@ const IC = {
   chart:'<path d="M5 19.5V11M12 19.5V5.5M19 19.5v-6"/>',
   bolt:'<path d="M13 2.5L4.5 13.8h6.6l-.9 7.7 8.8-11.3h-6.6z"/>',
   search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.2 4.2"/>',
+  filter:'<path d="M4 6h16M7 12h10m-7 6h4"/>',
+  user:'<circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 20v-1a5 5 0 0 1 5-5h5a5 5 0 0 1 5 5v1"/>',
+  chevronRight:'<path d="M9 5.5l6.5 6.5-6.5 6.5"/>',
+  chevronLeft:'<path d="M15 5.5 8.5 12l6.5 6.5"/>',
+  inbox:'<path d="M7.5 12H5L3.5 16v3h17v-3L19 12h-2.5M3.5 16h17M12 3v9m-3-3 3 3 3-3"/>',
+  bell:'<path d="M9.5 19a2.5 2.5 0 0 0 5 0M5 16.5h14l-1.5-2.5v-3.5a5.5 5.5 0 1 0-11 0V14z"/>',
+  message:'<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 3zM8 9h8m-8 4h5"/>',
+  battery:'<rect x="3.5" y="7" width="15" height="10" rx="2"/><path d="M21 10v4M8 12h6m-3-2.5v5"/>',
   cloud:'<path d="M7 18h10.5a3.5 3.5 0 0 0 .3-7 5.6 5.6 0 0 0-10.6-1.2A4.2 4.2 0 0 0 7 18Z"/>',
   backup:'<path d="M12 3.5v11M8 10.8l4 4 4-4"/><path d="M4.5 15.5v2.5a2 2 0 002 2h11a2 2 0 002-2v-2.5"/>',
   update:'<path d="M19.6 7.5v4.8h-4.8M4.4 16.5v-4.8h4.8"/><path d="M5.2 8a7.5 7.5 0 0 1 12.4-2.1l2 2.6M18.8 16a7.5 7.5 0 0 1-12.4 2.1l-2-2.6"/>',
@@ -396,7 +502,7 @@ const arg=v=>esc(JSON.stringify(v));
 
 const DEF = {
   tab:'home', calSub:'cal', statsSub:'overview',
-  firstMetDate:TODAY, budget:360000, autoGuard:true,
+  firstMetDate:TODAY, budgetLimits:{day:0,week:0,month:300000,quarter:0,year:0}, budgetSpent:{}, autoGuard:true,
   channels:{wechat:true,alipay:true,sms:true,unionpay:false},
   q:'', datePreset:'all', dateFrom:MONTH+'-01', dateTo:TODAY, dirFilter:'全部', catFilter:'全部种类',
   calMonth:MONTH, selDay:TDAY, trendSeries:['out','inc','net'], trendPeriod:'day', trendSelected:null,
@@ -439,7 +545,7 @@ function save(){
   const changed = S.txns.filter(t=>JSON.stringify(t)!==JSON.stringify(old.get(t.id)));
   const deleted = baseline.txns.filter(t=>!ids.has(t.id)).map(t=>t.id);
   const settings={};
-  for(const key of ['firstMetDate','budget','autoGuard','channels','stamps','rules']){
+  for(const key of ['firstMetDate','budgetLimits','autoGuard','channels','stamps','rules']){
     if(JSON.stringify(S[key])!==JSON.stringify(baseline[key])) settings[key]=S[key];
   }
   if(!changed.length&&!deleted.length&&!Object.keys(settings).length)return true;
@@ -451,6 +557,7 @@ function save(){
 function navigateBack(){
   if(datePicker){closeDatePicker();return 'handled';}
   if(document.getElementById('sheet-root').children.length){closeSheet();return 'handled';}
+  if(S.tab==='auto'&&showListeningSettings){openListeningSettings(false);return 'handled';}
   if(S.tab!=='home'){goTab('home');return 'handled';}
   return 'exit';
 }
@@ -477,6 +584,7 @@ function dayStat(dateStr){
   return { out:Math.max(0,out), inc, net:inc-Math.max(0,out) };
 }
 function getQuota(){return S.quota;}
+function hasBudget(){return Object.values(S.budgetLimits).some(amount=>amount>0);}
 function hasRecordedDay(date){
   return date<=TODAY && S.txns.some(t=>t.date===date && t.status==='已入账');
 }
@@ -486,6 +594,7 @@ function dayStamp(date,size){
 function getMood(date){
   if(S.stamps[date])return S.stamps[date];
   const out=dayStat(date).out, quota=S.quotas[date];
+  if(date===TODAY&&!hasBudget()&&out>0)return 'ok';
   const q=quota == null ? getQuota() : quota;
   return out<=q*.8?'happy':out<=q?'ok':'sad';
 }
@@ -520,8 +629,15 @@ function toast(msg){
 }
 
 /* ==================== 主框架与 4 大分页渲染 ==================== */
+let showListeningSettings=false;
+function openListeningSettings(open){
+  showListeningSettings=open;
+  slideView(open?1:-1);
+}
 function goTab(t){
   const order=['home','cal','stats','auto'], direction=Math.sign(order.indexOf(t)-order.indexOf(S.tab));
+  if(t==='auto'&&S.tab==='auto'&&showListeningSettings){openListeningSettings(false);return;}
+  showListeningSettings=false;
   S.tab=t;
   slideView(direction);
 }
@@ -530,10 +646,12 @@ function slideView(direction){
   const view=document.getElementById('view');
   view.scrollTop=0;
   if(direction&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    view.animate([{opacity:.45,transform:'translateX('+direction*14+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:200,easing:'cubic-bezier(.2,.85,.35,1)'});
+    view.getAnimations().forEach(animation=>animation.cancel());
+    view.animate([{opacity:.72,transform:'translateX('+direction*12+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:180,easing:'cubic-bezier(.2,.85,.35,1)'});
   }
 }
 const SWIPE_PAGES={cal:['calSub','cal','list'],stats:['statsSub','overview','worth']};
+const SUBPAGE_LABELS={cal:['印章日历','账单流水'],stats:['趋势与圆环','这笔值不值']};
 function switchSubpage(tab,index){
   if(S.tab!==tab)return;
   const [key,...pages]=SWIPE_PAGES[tab];
@@ -543,43 +661,47 @@ function switchSubpage(tab,index){
   slideView(direction);
 }
 function bindSubpageSwipe(){
-  const view=document.getElementById('view');
-  let start=null;
+  const surface=document.getElementById('main-view');
+  let gesture=null, suppressClick=false;
   const blocked=()=>['sheet-root','date-root'].some(id=>document.getElementById(id).childElementCount);
-  view.addEventListener('touchstart',event=>{
-    start=null;
-    if(!SWIPE_PAGES[S.tab]||event.touches.length!==1||blocked())return;
-    const target=event.target;
-    if(target.closest('input, textarea, select, [contenteditable], [aria-label="收支趋势图"]'))return;
-    const strip=target.closest('.frow');
-    if(strip&&strip.scrollWidth>strip.clientWidth+1)return;
-    const touch=event.touches[0];
-    if(touch.clientX<20||touch.clientX>view.clientWidth-20)return;
-    start={tab:S.tab,x:touch.clientX,y:touch.clientY,horizontal:false};
-  },{passive:true});
-  view.addEventListener('touchmove',event=>{
-    if(!start)return;
-    if(event.touches.length!==1){start=null;return;}
-    const touch=event.touches[0];
-    const dx=Math.abs(touch.clientX-start.x),dy=Math.abs(touch.clientY-start.y);
-    if(!start.horizontal){
-      if(dy>12&&dy>dx){start=null;return;}
-      if(dx<12||dx<=dy*1.4)return;
-      start.horizontal=true;
-    }
-    if(event.cancelable)event.preventDefault();
-  },{passive:false});
-  view.addEventListener('touchend',event=>{
-    const gesture=start;
-    start=null;
-    if(!gesture||!gesture.horizontal||blocked()||S.tab!==gesture.tab||event.changedTouches.length!==1)return;
-    const touch=event.changedTouches[0], dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
-    if(Math.abs(dx)<54||Math.abs(dx)<=Math.abs(dy)*1.4)return;
-    if(event.cancelable)event.preventDefault();
-    const [key,...pages]=SWIPE_PAGES[gesture.tab];
-    switchSubpage(gesture.tab,pages.indexOf(S[key])+(dx<0?1:-1));
-  },{passive:false});
-  view.addEventListener('touchcancel',()=>{start=null;},{passive:true});
+  surface.addEventListener('pointerdown',event=>{
+    gesture=null;
+    if(!event.isPrimary)return;
+    suppressClick=false;
+    if(event.pointerType!=='touch'||!SWIPE_PAGES[S.tab]||blocked())return;
+    if(event.target.closest('input,textarea,select,[contenteditable]'))return;
+    const [key,...pages]=SWIPE_PAGES[S.tab];
+    gesture={id:event.pointerId,tab:S.tab,index:pages.indexOf(S[key]),x:event.clientX,y:event.clientY,horizontal:false};
+  });
+  surface.addEventListener('pointermove',event=>{
+    if(gesture?.id!==event.pointerId||gesture.horizontal)return;
+    const dx=Math.abs(event.clientX-gesture.x),dy=Math.abs(event.clientY-gesture.y);
+    if(dy>=10&&dy>dx){gesture=null;return;}
+    if(dx<9||dx<dy*1.2)return;
+    gesture.horizontal=true;
+    suppressClick=true;
+    surface.setPointerCapture(event.pointerId);
+  });
+  surface.addEventListener('pointerup',event=>{
+    if(gesture?.id!==event.pointerId)return;
+    const {x,y,tab,index}=gesture;
+    gesture=null;
+    if(S.tab!==tab||blocked())return;
+    const dx=event.clientX-x,dy=event.clientY-y;
+    const threshold=Math.max(32,Math.min(52,surface.clientWidth*.11));
+    if(Math.abs(dx)<threshold||Math.abs(dx)<Math.abs(dy)*1.25)return;
+    const [key,...pages]=SWIPE_PAGES[tab];
+    if(pages.indexOf(S[key])!==index)return;
+    suppressClick=true;
+    switchSubpage(tab,index+(dx<0?1:-1));
+  });
+  surface.addEventListener('pointercancel',()=>{gesture=null;});
+  surface.addEventListener('click',event=>{
+    if(!suppressClick||event.detail===0)return;
+    suppressClick=false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },true);
 }
 function showPending(){
   S.tab='home';
@@ -591,21 +713,32 @@ function render(){
   
   const {metDays, usedDays} = getCompanionStats();
   const pend = S.txns.filter(t=>t.status==='待确认').length;
-  const titles = {home:`今天 · ${Number(MONTH.slice(5))}月${TDAY}日`, cal:'日历与账单筛选', stats:'收支趋势与圆环洞察', auto:'我的与自动记账'};
+  const titles = {home:`今天 · ${Number(MONTH.slice(5))}月${TDAY}日`, cal:'日历流水', stats:'洞察', auto:'我的'};
 
-  document.getElementById('app-top').innerHTML = `
+  document.getElementById('app-top').innerHTML = S.tab==='auto'&&showListeningSettings ? `
+    <div class="mine-back">
+      <button type="button" class="ibtn" onclick="openListeningSettings(false)" aria-label="返回我的">${ico('chevronLeft',21)}</button>
+      <b>监听与权限</b>
+    </div>
+  ` : `
     <div style="min-width:0">
       <b>${titles[S.tab]||'今天'}</b>
-      <div class="comp-pill" onclick="openCompanionSheet()">
+      ${S.tab==='home'?`<div class="comp-pill" onclick="openCompanionSheet()">
         <span>🤍 相识第 <strong class="num">${metDays}</strong> 天 · 已使用 <strong class="num">${usedDays}</strong> 天</span>
-      </div>
+      </div>`:''}
     </div>
-    <div style="display:flex;gap:6px;flex:none">
-      <div class="ibtn" onclick="S.calSub='list';goTab('cal')" title="搜索与筛选账单">${ico('search',16)}</div>
-      <div class="ibtn" onclick="openBackupSheet()" title="备份与恢复">${ico('backup',16)}</div>
-    </div>
+    ${S.tab==='auto'?'':`<div style="display:flex;gap:6px;flex:none">
+      <button type="button" class="ibtn" onclick="S.calSub='list';goTab('cal')" aria-label="搜索与筛选账单">${ico('search',20)}</button>
+      <button type="button" class="ibtn" onclick="openBackupSheet()" aria-label="备份与恢复">${ico('backup',20)}</button>
+    </div>`}
   `;
 
+  const swipePage=SWIPE_PAGES[S.tab];
+  document.getElementById('main-view').classList.toggle('swipe-pages',Boolean(swipePage));
+  document.getElementById('subpage-nav').innerHTML=swipePage?`<div class="seg">${SUBPAGE_LABELS[S.tab].map((label,index)=>{
+    const active=S[swipePage[0]]===swipePage[index+1];
+    return `<button type="button" class="${active?'on':''}" aria-pressed="${active}" onclick="switchSubpage('${S.tab}',${index})">${label}</button>`;
+  }).join('')}</div>`:'';
   const v = document.getElementById('view');
   if(S.tab==='home') v.innerHTML = renderHome();
   else if(S.tab==='cal') v.innerHTML = renderCalAndFilter();
@@ -613,23 +746,25 @@ function render(){
   else v.innerHTML = renderAutoAndMine();
 
   document.getElementById('dock').innerHTML = `
-    <div class="ditem ${S.tab==='home'?'on':''}" onclick="goTab('home')">${pend?'<i class="ndot"></i>':''}${ico('home',19)}<span>今天</span></div>
-    <div class="ditem ${S.tab==='cal'?'on':''}" onclick="goTab('cal')">${ico('cal',19)}<span>日历流水</span></div>
-    <button class="dadd" aria-label="记一笔" onclick="openAddSheet('paste')">${ico('plus',21)}</button>
-    <div class="ditem ${S.tab==='stats'?'on':''}" onclick="goTab('stats')">${ico('chart',19)}<span>洞察</span></div>
-    <div class="ditem ${S.tab==='auto'?'on':''}" onclick="goTab('auto')">${ico('bolt',19)}<span>我的/自动</span></div>
+    <div class="ditem ${S.tab==='home'?'on':''}" onclick="goTab('home')">${pend?'<i class="ndot"></i>':''}${ico('home',23)}<span>今天</span></div>
+    <div class="ditem ${S.tab==='cal'?'on':''}" onclick="goTab('cal')">${ico('cal',23)}<span>日历流水</span></div>
+    <button class="dadd" aria-label="记一笔" onclick="openAddSheet('paste')">${ico('plus',25)}</button>
+    <div class="ditem ${S.tab==='stats'?'on':''}" onclick="goTab('stats')">${ico('chart',23)}<span>洞察</span></div>
+    <div class="ditem ${S.tab==='auto'?'on':''}" onclick="goTab('auto')">${ico('user',23)}<span>我的</span></div>
   `;
 }
 
 /* ==================== Tab 1: 今天（适配三大视觉风格） ==================== */
 function renderHome(){
   const {out, inc} = dayStat(TODAY), quota = getQuota(), left = quota - out, mood = getMood(TODAY);
+  const limited=hasBudget();
   const ratio = quota ? Math.min(100,Math.round(out/quota*100)) : (out?100:0);
   const pend = S.txns.filter(t=>t.status==='待确认');
   const todayList = S.txns.filter(t=>t.date===TODAY && t.status!=='已忽略');
+  const balanceLabel='¥'+fmt(limited?Math.abs(left):out);
   const cSum = {};
   todayList.filter(t=>t.dir==='支出').forEach(t=>{ cSum[t.category]=(cSum[t.category]||0)+t.cents; });
-  const say = left<0 ? `今天超支 ¥${fmt(-left)} 啦，抱抱自己` : `今天花了 ¥${fmtS(out)}，还剩 ¥${fmtS(left)} 可支配`;
+  const say = !limited ? `今天花了 ¥${fmtS(out)}` : left<0 ? `今天超支 ¥${fmt(-left)} 啦，抱抱自己` : `今天花了 ¥${fmtS(out)}，还剩 ¥${fmt(left)} 可支配`;
 
 
     const bars = Array.from({length:5},(_,i)=>shiftDay(TODAY,i-4)).map(date=>{
@@ -640,22 +775,27 @@ function renderHome(){
         <div style="width:12px;height:56px;background:var(--track);border-radius:99px;display:flex;align-items:flex-end;overflow:hidden">
           <i style="width:100%;height:${h}px;background:${date===TODAY?'var(--cta)':'var(--green)'};border-radius:99px"></i>
         </div>
-        <span class="num" style="font-size:9.5px;color:var(--muted)">${d}日</span>
+        <span class="num" style="font-size:11px;color:var(--ink2)" aria-label="${d}日">${d}</span>
       </div>`;
     }).join('');
   const midCard = `<div class="bento2">
-      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between">
-        <span style="font-size:11px;color:var(--muted);font-weight:600">${left>=0?'今天还能花':'今日超支'}</span>
-        <b class="num" style="font-size:26px;font-weight:800;color:${left>=0?'var(--ink)':'var(--red)'};margin:4px 0">¥${fmt(Math.abs(left))}</b>
-        <div class="prog"><i style="width:${ratio}%"></i></div>
-        <span style="font-size:10px;color:var(--muted);margin-top:6px">日额度 ¥${fmtS(quota)} · <u onclick="openBudgetSheet()" style="cursor:pointer">改预算</u></span>
+      <div class="card home-budget">
+        <div class="home-budget-head">
+          <span>${!limited?'今日支出':left>=0?'今天还能花':'今日超支'}</span>
+          ${limited?'<button class="home-budget-edit" type="button" onclick="openBudgetSheet()">改预算</button>':''}
+        </div>
+        <b class="num budget-balance ${balanceLabel.length>10?'long':''}" style="color:${!limited||left>=0?'var(--ink)':'var(--red)'}">${balanceLabel}</b>
+        ${limited?`<div class="prog"><i style="width:${ratio}%"></i></div>
+        <button class="home-quota" type="button" onclick="openQuotaDetails()" aria-label="日额度 ¥${fmt(quota)}，查看计算明细">
+          <span>日额度</span><b class="num">¥${fmt(quota)}</b><span aria-hidden="true">${ico('chevronRight',12)}</span>
+        </button>`:'<button class="qbtn home-budget-setup" type="button" onclick="openBudgetSheet()">设置预算</button>'}
       </div>
       <div class="card" onclick="goTab('stats')" style="cursor:pointer">
-        <div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;margin-bottom:6px"><span>近5日趋势</span><span style="color:var(--cta)">详情→</span></div>
-        <div style="display:flex;gap:4px;align-items:flex-end">${bars}</div>
+        <div class="home-trend-heading"><span>近 5 日趋势</span><span style="color:var(--cta)">详情 ›</span></div>
+        <div style="display:flex;gap:3px;align-items:flex-end">${bars}</div>
       </div>
     </div>`;
-  return `
+  return `<div class="home-page">
     ${pend.length?`<div class="card" onclick="openEditSheet(${arg(pend[0].id)})" style="display:flex;justify-content:space-between;align-items:center;padding:9px 13px;margin-bottom:8px;cursor:pointer">
       <div><b style="font-size:12px">🔔 抓到 ${pend.length} 笔新账单待确认</b><span style="font-size:10.5px;color:var(--muted);display:block">${esc(pend[0].merchant)} · ¥${fmt(pend[0].cents)}</span></div>
       <span class="qbtn on">去确认</span>
@@ -666,27 +806,34 @@ function renderHome(){
       <div class="pig-box" onclick="S.statsSub='worth';goTab('stats')" title="点击噗噗去评价消费值不值">
         <svg class="pupu-float" width="168" height="168"><use href="#v8-${mood}" width="168" height="168"/></svg>
       </div>
-      <div class="orb" style="left:8px;top:42px;width:48px;height:48px;background:${CBG['餐饮']}" onclick="jumpFilterCat('餐饮')">${ico('餐饮',20)}<small>餐饮 ${cSum['餐饮']?'¥'+fmtS(cSum['餐饮']):'0'}</small></div>
-      <div class="orb" style="right:8px;top:42px;width:48px;height:48px;background:${CBG['交通']}" onclick="jumpFilterCat('交通')">${ico('交通',20)}<small>交通 ${cSum['交通']?'¥'+fmtS(cSum['交通']):'0'}</small></div>
-      <div class="orb" style="left:6px;top:132px;width:44px;height:44px;background:${CBG['购物']}" onclick="jumpFilterCat('购物')">${ico('购物',18)}<small>购物 ${cSum['购物']?'¥'+fmtS(cSum['购物']):'0'}</small></div>
-      <div class="orb" style="right:6px;top:132px;width:44px;height:44px;background:${CBG['红包']}" onclick="jumpFilterCat('红包')">${ico('红包',18)}<small>红包 ¥${fmtS(todayList.filter(t=>t.dir==='收入'&&t.category==='红包').reduce((sum,t)=>sum+t.cents,0))}</small></div>
+      <div class="orb" style="left:8px;top:42px;width:48px;height:48px;background:${CBG['餐饮']}" onclick="jumpFilterCat('餐饮')">${ico('餐饮',23)}<small>餐饮 ${cSum['餐饮']?'¥'+fmtS(cSum['餐饮']):'0'}</small></div>
+      <div class="orb" style="right:8px;top:42px;width:48px;height:48px;background:${CBG['交通']}" onclick="jumpFilterCat('交通')">${ico('交通',23)}<small>交通 ${cSum['交通']?'¥'+fmtS(cSum['交通']):'0'}</small></div>
+      <div class="orb" style="left:6px;top:132px;width:44px;height:44px;background:${CBG['购物']}" onclick="jumpFilterCat('购物')">${ico('购物',22)}<small>购物 ${cSum['购物']?'¥'+fmtS(cSum['购物']):'0'}</small></div>
+      <div class="orb" style="right:6px;top:132px;width:44px;height:44px;background:${CBG['红包']}" onclick="jumpFilterCat('红包')">${ico('红包',22)}<small>红包 ¥${fmtS(todayList.filter(t=>t.dir==='收入'&&t.category==='红包').reduce((sum,t)=>sum+t.cents,0))}</small></div>
     </div>
 
     ${midCard}
 
-    <div style="margin-top:10px">
-      ${actionCard('bolt','粘贴付款通知或短信','识别金额和商户，核对后入账',"openAddSheet('paste')")}
-    </div>
+    ${actionCard('bolt','粘贴付款通知或短信','识别金额和商户，核对后入账',"openAddSheet('paste')")}
 
-    <div class="sec-hd"><b>今日账单（${todayList.length} 笔）</b><span onclick="S.calSub='list';resetFilters();goTab('cal')">搜索与全部筛选 →</span></div>
-    <div class="card" style="padding:2px 14px">${todayList.length?todayList.map(renderRow).join(''):'<p class="empty">今天还没有账单</p>'}</div>
-  `;
+    <section>
+      <div class="sec-hd"><b>今日账单（${todayList.length} 笔）</b><span onclick="S.calSub='list';resetFilters();goTab('cal')">查看流水 ›</span></div>
+      ${todayList.length?`<div class="card" style="padding:2px 14px">${todayList.map(renderRow).join('')}</div>`:`<div class="card">${ledgerEmpty('今天还没有账单','有一笔要记？从这里开始。','记一笔',"openAddSheet('manual',TODAY)")}</div>`}
+    </section>
+  </div>`;
+}
+
+function ledgerEmpty(title,description,label,action){
+  return `<div class="ledger-empty"><span class="ledger-empty-art" aria-hidden="true">${stp('happy',42)}</span>
+    <div class="ledger-empty-copy"><b>${title}</b><p>${description}</p>
+      ${action?`<button class="qbtn" onclick="${action}">${label}</button>`:''}
+    </div></div>`;
 }
 
 function renderRow(t){
   const isIn = t.dir==='收入' || t.dir==='退款';
   return `<div class="ent" onclick="openEditSheet(${arg(t.id)})">
-    <span class="ico" style="background:${CBG[t.category]||'#eee'}">${ico(t.category,18)}</span>
+    <span class="ico" style="background:${CBG[t.category]||'#eee'}">${ico(t.category,21)}</span>
     <div class="m">
       <b><span>${esc(t.merchant)}</span>
         ${t.status==='待确认'?'<i class="tag" style="font-style:normal">待确认</i>':''}
@@ -712,11 +859,6 @@ function applyDatePreset(p){
   else if(p==='7d'){ S.dateFrom=shiftDay(TODAY,-6); S.dateTo=TODAY; }
   else if(p==='month'){ S.dateFrom=MONTH+'-01'; S.dateTo=fmtDate(MONTH,daysIn(MONTH)); }
 }
-function setDatePreset(p){
-  applyDatePreset(p);
-  render();
-}
-
 function getFilteredTxns(){
   const q = (S.q||'').trim().toLowerCase();
   return S.txns.filter(t=>{
@@ -739,14 +881,6 @@ function getFilteredTxns(){
 }
 
 function renderCalAndFilter(){
-  const head = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <div class="seg">
-      <button class="${S.calSub==='cal'?'on':''}" onclick="switchSubpage('cal',0)">猪猪印章日历</button>
-      <button class="${S.calSub==='list'?'on':''}" onclick="switchSubpage('cal',1)">账单筛选与搜索</button>
-    </div>
-    <span style="font-size:11px;color:var(--muted);font-weight:600"><button class="qbtn" onclick="shiftMonth(-1)">‹</button> ${S.calMonth} <button class="qbtn" onclick="shiftMonth(1)">›</button></span>
-  </div>`;
-
   if(S.calSub==='cal'){
     let cells = '';
     for(let i=0;i<(new Date(S.calMonth+'-01T12:00:00').getDay()+6)%7;i++) cells+='<div></div>';
@@ -763,78 +897,105 @@ function renderCalAndFilter(){
     const selStr = fmtDate(S.calMonth,S.selDay);
     const dList = S.txns.filter(t=>t.date===selStr && t.status!=='已忽略');
     const ds = dayStat(selStr);
-    return `${head}
-      <div class="card" style="padding:11px 10px">
-        <div style="display:flex;justify-content:space-between;padding:0 5px 7px;font-size:12px"><b>本月已盖 ${hCnt} 枚省钱开心猪章</b><span style="font-size:10.5px;color:var(--muted)">点击日期查看</span></div>
-        <div class="cal-grid" style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:4px"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+    return `<div class="flow-page">
+      <div class="card" style="padding:13px 12px">
+        <div class="calendar-head">
+          <div class="calendar-month">
+            <button class="qbtn" aria-label="上个月" onclick="shiftMonth(-1)">${ico('chevronLeft',15)}</button>
+            <time datetime="${S.calMonth}">${S.calMonth}</time>
+            <button class="qbtn" aria-label="下个月" onclick="shiftMonth(1)">${ico('chevronRight',15)}</button>
+          </div>
+          <b>本月开心猪章 ${hCnt} 枚</b>
+        </div>
+        <div class="cal-grid" style="font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:6px"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
         <div class="cal-grid">${cells}</div>
       </div>
-      <div class="card" style="margin-top:10px;padding:12px 14px">
+      <div class="card" style="padding:13px 14px">
         <div style="display:flex;align-items:center;gap:9px;padding-bottom:9px;border-bottom:1px solid var(--div)">
           ${dayStamp(selStr,40)}
           <div style="flex:1">
-            <b style="font-size:13.5px">${selStr.slice(5)} 明细</b>
-            <span style="display:block;font-size:10.5px;color:var(--muted)">支出 ¥${fmt(ds.out)} · 收入 ¥${fmt(ds.inc)}</span>
+            <b style="font-size:15px">${selStr.slice(5)} 明细</b>
+            <span style="display:block;font-size:12px;color:var(--ink2)">支出 ¥${fmt(ds.out)} · 收入 ¥${fmt(ds.inc)}</span>
           </div>
           ${hasRecordedDay(selStr)?`<div style="display:flex;gap:4px">${['happy','ok','sad'].map(m=>`<span onclick="stampDay('${selStr}','${m}')" style="padding:3px 4px;border-radius:8px;background:${getMood(selStr)===m?'#fff6d1':'var(--track)'};cursor:pointer">${stp(m,22)}</span>`).join('')}</div>`:''}
         </div>
-        ${dList.length?dList.map(renderRow).join(''):'<div style="padding:12px;text-align:center;font-size:11.5px;color:var(--muted)">当日无账单记录</div>'}
-      </div>`;
+        ${dList.length?dList.map(renderRow).join(''):ledgerEmpty('这天还没有账单',selStr>TODAY?'选择其他日期查看流水。':'可以给选中的日期补记一笔。','给这天记一笔',selStr<=TODAY?`openAddSheet('manual',${arg(selStr)})`:'')}
+      </div></div>`;
   }
 
-  // 账单多维搜索 + 日期筛选 + 种类筛选
+  return `<div class="flow-page">
+    <div class="flow-tools">
+      <div class="sbox">
+        <span style="position:absolute;left:10px;color:var(--muted);display:grid" aria-hidden="true">${ico('search',18)}</span>
+        <input type="search" id="q-inp" aria-label="搜索账单" placeholder="商户、备注或金额" value="${esc(S.q)}" oninput="updateFlowSearch(this.value)"/>
+        <button type="button" class="search-clear" aria-label="清除搜索" ${S.q?'':'hidden'} onclick="updateFlowSearch('');document.getElementById('q-inp').focus()">×</button>
+      </div>
+      ${flowFilterButton()}
+    </div>
+    <div class="flow-results" id="flow-results">${renderFlowResults()}</div>
+  </div>`;
+}
+
+const FLOW_DATE_PRESETS=[['all','全部日期'],['today','今天'],['3d','近3天'],['7d','近7天'],['month','本月'],['custom','自定义区间']];
+function flowSelection(){
+  return [S.datePreset==='custom'?`${dateLabel(S.dateFrom)} 至 ${dateLabel(S.dateTo)}`:S.datePreset==='all'?'':FLOW_DATE_PRESETS.find(([key])=>key===S.datePreset)?.[1],
+    S.dirFilter==='全部'?'':S.dirFilter,S.catFilter==='全部种类'?'':S.catFilter,S.postedOnly?'仅已入账':''].filter(Boolean);
+}
+function flowFilterButton(){
+  const count=flowSelection().length;
+  return `<button class="qbtn flow-filter-button ${count?'on':''}" type="button" aria-haspopup="dialog" onclick="openFlowFilters()">${ico('filter',18)}筛选${count?` <i>${count}</i>`:''}</button>`;
+}
+function openFlowFilters(){
+  const cats=['全部种类',...new Set([...ALL_CATS,...S.categories,...S.txns.map(t=>t.category)])];
+  const directions=['全部','支出','收入','自动记账','待确认'];
+  const pill=(label,selected,action)=>`<button type="button" class="qbtn ${selected?'on':''}" aria-pressed="${selected}" onclick="${action}">${esc(label)}</button>`;
+  document.getElementById('sheet-root').innerHTML=`<div class="mask" onclick="if(event.target===this)closeSheet()"><section class="sheet flow-filter-sheet" role="dialog" aria-modal="true" aria-label="账单筛选">
+    <div class="backup-heading"><h3>账单筛选</h3><button class="ibtn" aria-label="关闭筛选" onclick="closeSheet()">×</button></div>
+    <fieldset><legend>日期</legend><div class="flow-filter-options">${FLOW_DATE_PRESETS.map(([k,name])=>pill(name,S.datePreset===k,`applyDatePreset('${k}');refreshFlowFilters()`)).join('')}</div>
+      ${S.datePreset==='custom'?rangeButtons(S.dateFrom,S.dateTo,'openFlowDate'):''}</fieldset>
+    <fieldset><legend>方向与状态</legend><div class="flow-filter-options">${directions.map(dir=>pill(dir,S.dirFilter===dir,`S.postedOnly=false;S.dirFilter=${arg(dir)};refreshFlowFilters()`)).join('')}</div></fieldset>
+    <fieldset><legend>分类</legend><div class="flow-filter-options">${cats.map(cat=>pill(cat,S.catFilter===cat,`S.catFilter=${arg(cat)};refreshFlowFilters()`)).join('')}</div></fieldset>
+    <div class="backup-columns"><button class="cta-btn ghost" onclick="resetFilters();refreshFlowFilters()">重置</button><button class="cta-btn" onclick="closeSheet()">查看结果</button></div>
+  </section></div>`;
+}
+function refreshFlowFilters(){
+  const sheet=document.querySelector('.flow-filter-sheet');
+  const scroll=sheet.scrollTop;
+  render();
+  openFlowFilters();
+  document.querySelector('.flow-filter-sheet').scrollTop=scroll;
+}
+function updateFlowSearch(value){
+  S.q=value;
+  const field=document.getElementById('q-inp');
+  if(field.value!==value)field.value=value;
+  document.querySelector('.search-clear').hidden=!value;
+  document.getElementById('flow-results').innerHTML=renderFlowResults();
+}
+
+function renderFlowResults(){
   const list = getFilteredTxns();
   let sumOut=0, sumIn=0;
   list.forEach(t=>{ if(t.dir==='支出') sumOut+=t.cents; else if(t.dir==='收入'||t.dir==='退款') sumIn+=t.cents; });
   const dates = [...new Set(list.map(t=>t.date))].sort((a,b)=>b.localeCompare(a));
+  const filters=flowSelection();
 
-  return `${head}
-    <div class="sbox">
-      <span style="position:absolute;left:11px;color:var(--muted);display:grid">${ico('search',15)}</span>
-      <input id="q-inp" placeholder="搜商户、备注、分类、渠道或金额..." value="${esc(S.q)}" oninput="S.q=this.value;renderKeepFocus()"/>
-      ${S.q?`<span onclick="S.q='';render()" style="position:absolute;right:10px;cursor:pointer;font-size:14px;color:var(--muted)">×</span>`:''}
-    </div>
-
-    <div class="card" style="margin-top:8px;padding:9px 11px;background:var(--card-soft);display:flex;flex-direction:column;gap:6px">
-      <div class="frow">
-        <span style="font-size:10.5px;font-weight:700;color:var(--muted);flex:none">日期：</span>
-        ${[['all','全部日期'],['today','今天'],['3d','近3天'],['7d','近7天'],['month','本月'],['custom','自定义区间']].map(([k,n])=>
-          `<button class="qbtn ${S.datePreset===k?'on':''}" onclick="setDatePreset('${k}')">${n}</button>`
-        ).join('')}
-      </div>
-      ${S.datePreset==='custom'?rangeButtons(S.dateFrom,S.dateTo,'openFlowDate'):''}
-      <div class="frow">
-        <span style="font-size:10.5px;font-weight:700;color:var(--muted);flex:none">方向：</span>
-        ${['全部','支出','收入','自动记账','待确认'].map(d=>`<button class="qbtn ${S.dirFilter===d?'on':''}" onclick="S.postedOnly=false;S.dirFilter='${d}';render()">${d}</button>`).join('')}
-      </div>
-      <div class="frow">
-        <span style="font-size:10.5px;font-weight:700;color:var(--muted);flex:none">种类：</span>
-        ${['全部种类',...new Set([...ALL_CATS,...S.categories,...S.txns.map(t=>t.category)])].map(c=>`<button class="qbtn ${S.catFilter===c?'on':''}" onclick="S.catFilter=${arg(c)};render()">${esc(c)}</button>`).join('')}
-      </div>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:9px 3px 6px;font-size:11px;color:var(--ink2);font-weight:600">
+  return `<div class="flow-summary">
       <span>共 <b>${list.length}</b> 笔 · 支 ¥${fmtS(sumOut)} · 收 ¥${fmtS(sumIn)} · 结余 <b style="color:${sumIn-sumOut>=0?'var(--green)':'var(--red)'}">¥${fmtS(sumIn-sumOut)}</b></span>
-      ${(S.postedOnly||S.q||S.datePreset!=='all'||S.dirFilter!=='全部'||S.catFilter!=='全部种类')?`<u style="cursor:pointer;color:var(--cta)" onclick="resetFilters();render()">重置</u>`:''}
+      ${filters.length||S.q?`<button class="qbtn" onclick="resetFilters();render()">重置</button>`:''}
+      ${filters.length?`<div class="flow-selection" style="flex-basis:100%">${filters.map(esc).join(' · ')}</div>`:''}
     </div>
 
     ${dates.map(dt=>{
       const rows = list.filter(t=>t.date===dt);
-      const dayN = parseInt(dt.slice(8),10);
-      return `<div style="display:flex;align-items:center;gap:6px;margin:9px 2px 5px;font-size:11.5px;font-weight:700">
-        ${dayStamp(dayN,22)} <span>${dt}</span>
-      </div><div class="card" style="padding:2px 14px">${rows.map(renderRow).join('')}</div>`;
+      return `<section><div style="display:flex;align-items:center;gap:6px;margin:0 2px 7px;font-size:13px;font-weight:700">
+        ${dayStamp(dt,22)} <span>${dt}</span>
+      </div><div class="card" style="padding:3px 14px">${rows.map(renderRow).join('')}</div></section>`;
     }).join('')}
-    ${!list.length?'<div class="card" style="margin-top:8px;text-align:center;color:var(--muted);font-size:12px;padding:22px">没有符合筛选条件的账单</div>':''}
+    ${!list.length?`<div class="card">${S.txns.some(t=>t.status!=='已忽略')
+      ?ledgerEmpty('没有匹配的账单','试试清除关键词和筛选条件。','重置筛选','resetFilters();render()')
+      :ledgerEmpty('账本还是空的','记下第一笔收支，就能在这里查找。','记第一笔',"openAddSheet('manual',TODAY)")}</div>`:''}
   `;
-}
-
-function renderKeepFocus(){
-  const field=document.getElementById('q-inp');
-  const pos=field && field.selectionStart != null ? field.selectionStart : S.q.length;
-  render();
-  const inp = document.getElementById('q-inp');
-  if(inp){ inp.focus(); inp.setSelectionRange(pos,pos); }
 }
 
 /* ==================== 3 & 4. 洞察：支出/收入/结余交互趋势图 + 支出/收入双模圆环图 ==================== */
@@ -859,7 +1020,7 @@ function openFlowDate(which){
       S.dateTo=value;
       if(value<S.dateFrom)S.dateFrom=value;
     }
-    render();
+    refreshFlowFilters();
   });
 }
 let datePicker=null;
@@ -1117,12 +1278,12 @@ function renderTrendChart(bins,selected,hasRecords){
   const placed=[[],[]];
   function axisText(value,row,i){
     if(!value)return '';
-    const labelWidth=Array.from(value).reduce((total,char)=>total+(/[0-9.\\/]/.test(char)?6.3:10),0);
+    const labelWidth=Array.from(value).reduce((total,char)=>total+(/[0-9.\\/]/.test(char)?6.8:11),0);
     const center=Math.min(width-2-labelWidth/2,Math.max(2+labelWidth/2,x(i)));
     const start=center-labelWidth/2,end=center+labelWidth/2;
     if(placed[row].some(([left,right])=>start<right+5&&end>left-5))return '';
     placed[row].push([start,end]);
-    return `<text x="${center}" y="${plotHeight-7+row*12}" text-anchor="middle" font-size="${row===0?9.5:8.5}" fill="var(--muted)">${esc(value)}</text>`;
+    return `<text x="${center}" y="${plotHeight-7+row*12}" text-anchor="middle" font-size="${row===0?11:9.5}" fill="var(--ink2)">${esc(value)}</text>`;
   }
   const candidates=[0];
   if(bins.length>1)candidates.push(bins.length-1);
@@ -1138,10 +1299,10 @@ function renderTrendChart(bins,selected,hasRecords){
     return `<rect x="${start}" y="0" width="${end-start}" height="${height}" fill="transparent" onclick="S.trendSelected='${b.key}';render()"/>`;
   }).join('');
   const hint=!visible.length?'曲线已隐藏':!hasRecords?'该范围暂无账单':'';
-  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="收支趋势图" style="display:block;width:100%;height:auto;margin-top:6px;overflow:visible">
+  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="收支趋势图" style="display:block;width:100%;height:auto;margin-top:10px;overflow:visible">
     <line x1="${left}" y1="${y(0)}" x2="${width-right}" y2="${y(0)}" stroke="var(--div)" stroke-dasharray="4 3"/>
     ${fills}${lines}${labels}
-    ${hint?`<text x="${width/2}" y="${height/2}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${hint}</text>`:''}
+    ${hint?`<text x="${width/2}" y="${height/2}" text-anchor="middle" font-size="12" fill="var(--ink2)">${hint}</text>`:''}
     ${targets}
   </svg>`;
 }
@@ -1154,19 +1315,22 @@ function jumpTrendCategory(category,direction){
 }
 
 function renderInsights(){
-  const topSw = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <div class="seg">
-      <button class="${S.statsSub==='overview'?'on':''}" onclick="switchSubpage('stats',0)">趋势与圆环图</button>
-      <button class="${S.statsSub==='worth'?'on':''}" onclick="switchSubpage('stats',1)">这笔值不值</button>
-    </div>
-  </div>`;
-
   if(S.statsSub==='worth'){
-    const item = S.txns.find(t=>t.dir==='支出'&&t.status==='已入账'&&t.score<0);
-    if(!item) return topSw+'<div class="card">暂无待评价支出</div>';
+    const expenses=S.txns.filter(t=>t.dir==='支出'&&t.status==='已入账');
+    const item=expenses.find(t=>t.score<0);
+    if(!item){
+      const pending=S.txns.find(t=>t.dir==='支出'&&t.status==='待确认');
+      const title=expenses.length?'已评价完这批支出':'还没有可评价的支出';
+      const note=pending?'先核对这笔支出，入账后就能评价。':expenses.length?`已经评价了 ${expenses.length} 笔。新支出入账后会出现在这里。`:'记一笔支出后，就可以回来评价这笔花得值不值。';
+      const label=pending?'核对待确认支出':expenses.length?'查看支出流水':'记一笔支出';
+      const action=pending?`openEditSheet(${arg(pending.id)})`:expenses.length?"resetFilters();S.dirFilter='支出';S.postedOnly=true;S.calSub='list';goTab('cal')":"mDir='支出';openAddSheet('manual',TODAY)";
+      return `<section class="card worth-empty">
+        <span class="worth-empty-art" aria-hidden="true"><svg width="102" height="102"><use href="#v8-happy" width="102" height="102"/></svg></span>
+        <h3>${title}</h3><p>${note}</p><button class="cta-btn" onclick="${action}">${label}</button>
+      </section>`;
+    }
     const cfg = {sad:{t:'有点肉疼…下次三思',sc:25},ok:{t:'中规中矩，日常刚需',sc:60},happy:{t:'花得超值！幸福感拉满',sc:95}}[S.worthMood];
-    return `${topSw}
-      <div class="card" style="text-align:center;padding:18px 15px">
+    return `<div class="card" style="text-align:center;padding:19px 15px">
         <b style="font-size:19px;font-weight:800">这笔消费花得值吗？</b>
         <div style="margin:9px auto;display:inline-block;padding:5px 14px;border-radius:99px;background:var(--track);font-size:12px;font-weight:700">${esc(item.merchant)} · ¥${fmt(item.cents)}</div>
         <div style="display:flex;justify-content:center;gap:7px;margin-top:6px">
@@ -1200,14 +1364,14 @@ function renderInsights(){
     a0 += sw;
   });
 
-  return `${topSw}
+  return `<div class="insights-page">
     <!-- 1. 支出/收入/结余 趋势图卡片 -->
     <div class="card">
       <div class="trend-head">
         <div class="trend-series" aria-label="显示曲线">
           ${TREND_SERIES.map(([key,label,color])=>`<button style="--series:${color}" aria-pressed="${S.trendSeries.includes(key)}" onclick="toggleTrendSeries('${key}')"><i aria-hidden="true"></i>${label}</button>`).join('')}
         </div>
-        <button class="trend-period-button" onclick="openTrendPeriod()" aria-haspopup="dialog" aria-label="统计周期 ${periodLabel}">${S.trendPeriod==='custom'?periodLabel:'按'+periodLabel}${ico('cal',13)}</button>
+        <button class="trend-period-button" onclick="openTrendPeriod()" aria-haspopup="dialog" aria-label="统计周期 ${periodLabel}">${S.trendPeriod==='custom'?periodLabel:'按'+periodLabel}${ico('cal',16)}</button>
       </div>
       <div class="trend-filters">${trendCategoryButton('支出')}${trendCategoryButton('收入')}</div>
       <div class="trend-detail">
@@ -1223,22 +1387,22 @@ function renderInsights(){
     </div>
 
     <!-- 2. 支出 / 收入 双模式圆环图卡片 -->
-    <div class="card" style="margin-top:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <b style="font-size:14px">${dMode}构成圆环图</b>
+    <div class="card">
+      <div class="donut-head">
+        <b>${dMode}构成</b>
         <div class="seg">
-          <button class="${dMode==='支出'?'on':''}" onclick="S.donutMode='支出';render()">支出圆环</button>
-          <button class="${dMode==='收入'?'on':''}" onclick="S.donutMode='收入';render()">收入圆环</button>
+          <button class="${dMode==='支出'?'on':''}" onclick="S.donutMode='支出';render()">支出</button>
+          <button class="${dMode==='收入'?'on':''}" onclick="S.donutMode='收入';render()">收入</button>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
-        <div style="position:relative;width:152px;height:152px;flex:none">
+      <div class="donut-body">
+        <div class="donut-figure">
           <svg width="152" height="152" viewBox="0 0 152 152">${arcs||'<circle cx="76" cy="76" r="56" fill="none" stroke="#eeeae4" stroke-width="24"/>'}</svg>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
             ${stp(hasRecordedDay(TODAY)?getMood(TODAY):'happy',34)}
             <b class="num" style="font-size:14px;font-weight:800;margin-top:2px">¥${fmtS(dTotal)}</b>
-            <span style="font-size:9.5px;color:var(--muted)">总${dMode}</span>
+            <span style="font-size:12px;color:var(--ink2)">总${dMode}</span>
           </div>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;gap:7px;min-width:0">
@@ -1246,7 +1410,7 @@ function renderInsights(){
           ${catArr.map(([c, val])=>{
             const pct = Math.round((val/Math.max(1,dTotal))*100);
             return `<div onclick="jumpTrendCategory(${arg(c)},${arg(dMode)})" style="cursor:pointer">
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600">
+              <div class="donut-label">
                 <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${CCOL[c]||'#978a7a'};margin-right:4px"></i>${esc(c)} <small style="color:var(--muted)">${pct}%</small></span>
                 <b class="num">¥${fmtS(val)}</b>
               </div>
@@ -1255,60 +1419,61 @@ function renderInsights(){
           }).join('')}
         </div>
       </div>
-    </div>
-  `;
+    </div></div>`;
 }
 
-/* ==================== 5. 我的 / 自动记账 / 陪伴纪念与数据备份 ==================== */
-function actionCard(icon,title,description,action,tone='',warning=false){
-  return `<button type="button" class="action-card${warning?' permission-warning':''}" onclick="${action}">
-    <span class="action-icon ${tone}" aria-hidden="true">${ico(icon,18)}</span>
+/* ==================== 5. 我的 ==================== */
+function actionCard(icon,title,description,action){
+  return `<button type="button" class="action-card" onclick="${action}">
+    <span class="action-icon" aria-hidden="true">${ico(icon,22)}</span>
     <span class="action-copy"><b>${title}</b><small>${description}</small></span>
     <span class="action-arrow" aria-hidden="true">›</span>
   </button>`;
 }
+function mineRow(icon,title,description,action,tone='',warning=false){
+  return `<button type="button" class="mine-row${warning?' permission-warning':''}" onclick="${action}">
+    <span class="action-icon ${tone}" aria-hidden="true">${ico(icon,20)}</span>
+    <span class="action-copy"><b>${title}</b><small>${description}</small></span>
+    <span class="mine-row-arrow" aria-hidden="true">${ico('chevronRight',15)}</span>
+  </button>`;
+}
 function renderAutoAndMine(){
-  const autoCnt = S.txns.filter(t=>t.auto).length;
-  const mergeCnt = S.txns.filter(t=>t.merged).length;
+  if(showListeningSettings)return renderListeningSettings();
+  const autoCount=S.txns.filter(t=>t.auto).length;
+  const warning=listenerWarning();
+  const status=[listenerSummary(),warning].filter(Boolean).join(' · ');
 
-  return `
-    <!-- 自动记账总控卡 -->
-    <div class="dark-guard">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+  return `<div class="mine-page">
+    <section class="mine-hero" aria-labelledby="mine-auto-title">
+      <div class="mine-hero-top">
         <div>
-          <span style="font-size:10.5px;background:rgba(255,255,255,.16);padding:2.5px 9px;border-radius:99px">${S.autoGuard?(S.listening?'本地离线值班中':'暂无正常监听的渠道'):'已暂停自动监听'}</span>
-          <b style="display:block;font-size:19px;margin-top:7px">已自动记下 ${autoCnt} 笔</b>
-          <span style="font-size:11px;opacity:.82">微信+银行短信防重合并 ${mergeCnt} 笔 · 已学 ${Object.keys(S.rules).length} 条规则</span>
+          <h2 class="mine-hero-title" id="mine-auto-title">${ico('bolt',21)}自动记账</h2>
+          <p role="status" class="mine-status ${warning?'warning':S.listening?'active':''}">${status}</p>
         </div>
-        <div class="sw ${S.autoGuard?'':'off'}" onclick="S.autoGuard=!S.autoGuard;save();render()"></div>
+        <button type="button" class="sw ${S.autoGuard?'':'off'}" role="switch" aria-checked="${S.autoGuard}" aria-label="自动记账总开关" onclick="S.autoGuard=!S.autoGuard;save()"></button>
       </div>
-    </div>
-
-    <div class="sec-hd"><b>备份与恢复</b></div>
-    <div class="action-stack">
-      ${actionCard('backup','本地备份','保存或恢复 JSON 文件，也可导入和导出 CSV',"openBackupSheet('local')")}
-      ${actionCard('cloud','WebDAV 备份','上传备份，或从你的 WebDAV 服务器恢复',"openBackupSheet('webdav')",'mint')}
-    </div>
-
-    <div class="sec-hd"><b>监听渠道开关</b><span onclick="Ledger.configure('notification')">通知授权</span></div>
-    <div class="card" style="padding:2px 14px">
-      ${LISTENING_CHANNELS.map(renderListeningChannel).join('')}
-    </div>
-    <div class="sec-hd"><b>权限与后台运行</b></div>
-    <div class="action-stack">${renderLedgerPermissions()}</div>
-    <div class="sec-hd"><b>补充数据来源</b></div>
-    <div class="action-stack">
-      ${actionCard('backup','导入微信 / 支付宝账单','从手机中选择导出的账单文件',"Ledger.importFile('bills')",'mint')}
-    </div>
-    <div class="sec-hd"><b>版本与更新</b></div>
-    <div class="action-stack">
-      ${actionCard('update','检查更新',`当前 ${versionLabel(Ledger.appVersion())}`,"openUpdateSheet('check',true)")}
-      ${actionCard('history','更新历史','查看版本说明和 GitHub 发布记录',"openUpdateSheet('history',true)",'mint')}
-    </div>
-  `;
+      <p class="mine-count">已自动记下 <strong class="num">${autoCount}</strong> 笔</p>
+      <button type="button" class="mine-manage" onclick="openListeningSettings(true)">管理监听与权限${ico('chevronRight',17)}</button>
+    </section>
+    <section aria-labelledby="mine-data-title">
+      <div class="mine-heading"><h2 id="mine-data-title">账本数据</h2></div>
+      <div class="card mine-group">
+        ${mineRow('backup','本地备份','备份、恢复及 CSV 导入导出',"openBackupSheet('local')")}
+        ${mineRow('cloud','WebDAV 备份','上传备份或从服务器恢复',"openBackupSheet('webdav')",'mint')}
+        ${mineRow('inbox','导入微信 / 支付宝账单','选择已导出的账单文件',"Ledger.importFile('bills')",'sand')}
+      </div>
+    </section>
+    <section aria-labelledby="mine-version-title">
+      <div class="mine-heading"><h2 id="mine-version-title">版本与更新</h2><span class="mine-version">${esc(versionLabel(Ledger.appVersion()))}</span></div>
+      <div class="card mine-group">
+        ${mineRow('update','检查更新','查找 GitHub 上的新版本',"openUpdateSheet('check',true)")}
+        ${mineRow('history','更新历史','查看版本说明和 GitHub 发布记录',"openUpdateSheet('history',true)")}
+      </div>
+    </section>
+  </div>`;
 }
 
-const bundledRelease={tag:'v0.3.20',title:'空叶记账 v0.3.20',notes:'- 增加检查更新与更新历史，支持打开 GitHub 发布和安装包。\n- 调整桌面图标，铺满粉色底面，收浅猪嘴的弧度。'};
+const bundledRelease={tag:'v0.3.26',title:'空叶记账 v0.3.26',notes:'- 调整主页面的字号、图标和按钮尺寸。\n- 重做首页日额度入口，点整行可查看计算明细。'};
 let githubCatalog=null, updateBusy=false, updateError='';
 const versionLabel=version=>version?'v'+version.replace(/^v/,''):'未知版本';
 function openUpdateSheet(tab,refresh=false){
@@ -1380,18 +1545,65 @@ const LISTENING_CHANNELS=[
   ['wechat','微信支付通知'],['alipay','支付宝通知'],
   ['sms','银行动账短信'],['unionpay','云闪付通知']
 ];
+let listenerReconnecting=false;
+function setListenerReconnect(active){listenerReconnecting=active;if(S.tab==='auto')render();}
+function listenerSummary(){
+  if(!S.autoGuard)return '已暂停自动监听';
+  if(!LISTENING_CHANNELS.some(([channel])=>S.channels[channel]))return '尚未开启任何监听渠道';
+  const notifications=notificationListeningState()==='active';
+  const sms=listeningState('sms')==='active';
+  return notifications?(sms?'通知与短信均在监听':'正在监听支付通知'):sms?'仅在监听银行短信':'暂无正常监听的渠道';
+}
+function notificationListeningState(){
+  const entry=LISTENING_CHANNELS.find(([channel])=>channel!=='sms'&&S.channels[channel]);
+  return entry?listeningState(entry[0]):'off';
+}
+function listenerWarning(){
+  if(!S.autoGuard)return '';
+  const notificationState=notificationListeningState();
+  const notificationWarning={
+    permission:'通知待授权',disabled:'通知监听已停用',
+    disconnected:listenerReconnecting?'通知监听连接中':'通知监听未连接'
+  }[notificationState];
+  const smsWarning={permission:'短信待授权',partial:'短信权限不完整'}[listeningState('sms')];
+  return [notificationWarning,smsWarning].filter(Boolean).join(' · ');
+}
+function renderListeningSettings(){
+  const mergeCount=S.txns.filter(t=>t.merged).length;
+  return `<div class="mine-page">
+    <section aria-labelledby="mine-channels-title">
+      <div class="mine-heading"><h2 id="mine-channels-title">监听渠道</h2></div>
+      ${renderListenerRecovery()}
+      <div class="card mine-group">${LISTENING_CHANNELS.map(renderListeningChannel).join('')}</div>
+      <p class="mine-auto-meta">已合并 ${mergeCount} 笔重复通知 · ${Object.keys(S.rules).length} 条商户规则</p>
+    </section>
+    <section aria-labelledby="mine-permissions-title">
+      <div class="mine-heading"><h2 id="mine-permissions-title">系统权限与后台运行</h2></div>
+      <div class="card mine-group">${renderLedgerPermissions()}</div>
+    </section>
+  </div>`;
+}
+function renderListenerRecovery(){
+  const state=notificationListeningState();
+  const description={permission:'支付通知需要开启通知读取权。',disabled:'支付通知的监听已停用。',disconnected:'支付通知的监听尚未连接。'}[state];
+  if(!description)return '';
+  const [label,action]=state==='permission'?['去授权','notification']:['重新连接','notification-retry'];
+  const reconnecting=listenerReconnecting&&state!=='permission';
+  return `<div class="channel-recovery"><span role="status">${reconnecting?'正在等待系统连接通知监听…':description}</span>
+    <button class="qbtn" onclick="Ledger.configure('${action}')" ${reconnecting?'disabled':''}>${reconnecting?'连接中…':label}</button></div>`;
+}
 function renderLedgerPermissions(){
   const {notification,sms,reminders,battery}=S.permissions||{};
   const reminderStatus={
     active:'已授权',off:'记账提醒已关闭，点击启用',
     permission:'未授权，无法发送记账提醒',
     'channel-blocked':'系统已关闭记账提醒通知类别，点击设置'
-  }[reminders];
+  }[reminders]||'查看记账提醒权限';
   return [
-    actionCard('bolt','通知读取权',notification?'已授权':'未授权，无法监听付款通知',"Ledger.configure('notification')",'',!notification),
-    actionCard('bolt','短信权限',sms==='active'?'已授权':sms==='partial'?'短信权限不完整，点击授权':'未授权，无法读取银行动账短信',"Ledger.configure('sms')",'',sms!=='active'),
-    actionCard('cal','记账提醒',reminderStatus,"Ledger.configure('reminders')",'',reminders!=='active'),
-    actionCard('bolt','后台运行',battery?'已设为不限制':'电池优化开启，后台监听可能中断',"Ledger.configure('battery')",'',!battery)
+    mineRow('bell','通知读取权',notification?'已授权':'未授权，无法监听付款通知',"Ledger.configure('notification')",'',!notification),
+    mineRow('message','短信权限',sms==='active'?'已授权':sms==='partial'?'短信权限不完整，点击授权':'未授权，无法读取银行动账短信',"Ledger.configure('sms')",'',sms!=='active'),
+    mineRow('cal','记账提醒',reminderStatus,"Ledger.configure('reminders')","sand",reminders!=='active'),
+    mineRow('battery','后台运行',battery?'已设为不限制':'电池优化开启，后台监听可能中断',"Ledger.configure('battery')","mint",!battery)
   ].join('');
 }
 function listeningState(channel){
@@ -1401,7 +1613,7 @@ function channelHint(channel,state){
   return {
     active:'正在监听',off:'已关闭',paused:'自动记账总开关已暂停',
     permission:channel==='sms'?'未授权短信权限':'未开启通知读取权',
-    partial:'短信权限不完整',disabled:'通知监听已停用',disconnected:'已授权，通知监听未连接'
+    partial:'短信权限不完整',disabled:'通知监听已停用',disconnected:listenerReconnecting?'正在重新连接':'已授权，通知监听未连接'
   }[state];
 }
 function channelAction(channel,state){
@@ -1412,11 +1624,11 @@ function channelAction(channel,state){
 }
 function renderListeningChannel([channel,name]){
   const state=listeningState(channel), action=channelAction(channel,state);
-  const enabled=Boolean(S.channels[channel]), pending=enabled&&state!=='active';
+  const enabled=Boolean(S.channels[channel]), pending=enabled&&S.autoGuard&&state!=='active';
   return `<div class="ent channel-row">
     <div class="m"><b>${name}</b><span class="${pending?'channel-warning':''}" role="status">${channelHint(channel,state)}</span></div>
     <div class="channel-tools">
-      ${action?`<button class="qbtn" onclick="Ledger.configure('${action[1]}')" aria-label="${name} ${action[0]}">${action[0]}</button>`:''}
+      ${channel==='sms'&&action?`<button class="qbtn" onclick="Ledger.configure('${action[1]}')" aria-label="${name} ${action[0]}">${action[0]}</button>`:''}
       <button class="sw ${pending?'pending':enabled?'':'off'}" role="switch" aria-checked="${enabled}" aria-label="${name}" onclick="toggleChannel('${channel}')"></button>
     </div>
   </div>`;
@@ -1593,7 +1805,8 @@ function entryCategories(direction){
   const income=['工资','兼职','理财','红包','收入'];
   return direction==='收入' ? income : [...new Set([...ALL_CATS,...S.categories])].filter(c=>!income.includes(c));
 }
-function openAddSheet(tab='paste'){
+function openAddSheet(tab='paste',date){
+  if(date)mDate=date;
   addTab = tab; renderAddSheet();
 }
 function openManualDate(){
@@ -1727,21 +1940,69 @@ function moneyInput(value){
   if(!/^\d{1,10}(?:\.\d{0,2})?$/.test(text))return 0;
   return Math.round(Number(text)*100);
 }
-function commitBudget(value){
-  const budget=moneyInput(value);
-  if(!budget){toast('请输入大于 0 的预算');return;}
-  S.budget=budget;
-  if(save()){closeSheet();toast('预算已保存');}
-}
-function openBudgetSheet(){
-  document.getElementById('sheet-root').innerHTML = `<div class="mask" onclick="if(event.target===this)closeSheet()"><div class="sheet">
-    <h3 style="font-size:16.5px;font-weight:800">设定月度预算</h3>
-    <label class="edit-field">预算（元） <input id="budget-input" inputmode="decimal" value="${fmt(S.budget)}"></label>
-    <button class="cta-btn" onclick="commitBudget(document.getElementById('budget-input').value)">保存预算</button>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px">
-      ${[2500,3600,5000,8000].map(v=>`<button class="qbtn ${S.budget===v*100?'on':''}" style="padding:8px 0" onclick="commitBudget(${v})">¥${v}</button>`).join('')}
+const budgetPeriods={day:'日',week:'周',month:'月',quarter:'季',year:'年'};
+function openQuotaDetails(){
+  const basis=S.quotaDetails;
+  const spent=dayStat(TODAY).out, quota=getQuota(), available=quota-spent;
+  const row=(label,value)=>`<div class="quota-row"><dt>${label}</dt><dd>${value}</dd></div>`;
+  document.getElementById('sheet-root').innerHTML=`<div class="mask" onclick="if(event.target===this)closeSheet()"><section class="sheet" role="dialog" aria-modal="true" aria-label="日额度怎么算">
+    <div class="backup-heading"><h3>日额度怎么算</h3><button class="ibtn" aria-label="关闭计算明细" onclick="closeSheet()">×</button></div>
+    <div class="quota-details">
+      ${basis?`<p class="quota-note">按当前预算和账单计算${Object.values(S.budgetLimits).filter(v=>v>0).length>1?' · 采用最紧的周期额度':''}</p><dl class="quota-rows">
+        ${row(`${budgetPeriods[basis.period]}预算`,`¥${fmt(basis.limit)}`)}
+        ${row('本期截至昨天的净支出',`¥${fmt(basis.earlierSpending)}`)}
+        ${row('剩余天数（含今天）',`${basis.daysLeft} 天`)}
+        ${row('期内余额 ÷ 剩余天数',`¥${fmt(basis.remaining)} ÷ ${basis.daysLeft} = ¥${fmt(basis.daily)}`)}
+      </dl>`:''}
+      <dl class="quota-rows">
+        ${row('首页日额度',`¥${fmt(quota)}`)}
+        ${row('减去今天净支出',`¥${fmt(spent)}`)}
+        ${row(available>=0?'今天还能花':'今日超支',`¥${fmt(Math.abs(available))}`)}
+      </dl>
     </div>
-  </div></div>`;
+    <button class="cta-btn ghost" onclick="openBudgetSheet()">改预算</button>
+  </section></div>`;
+}
+let budgetPeriod='month',budgetDraft={};
+function openBudgetSheet(){
+  budgetDraft=Object.fromEntries(Object.keys(budgetPeriods).map(key=>[key,S.budgetLimits[key]>0?fmt(S.budgetLimits[key]):'']));
+  renderBudgetSheet();
+}
+function pickBudgetPeriod(period){budgetPeriod=period;renderBudgetSheet();}
+function renderBudgetSheet(){
+  const label=budgetPeriods[budgetPeriod];
+  const used=S.budgetSpent[budgetPeriod]||0;
+  const limit=moneyInput(budgetDraft[budgetPeriod]);
+  document.getElementById('sheet-root').innerHTML = `<div class="mask" onclick="if(event.target===this)closeSheet()"><section class="sheet" role="dialog" aria-modal="true" aria-label="设置预算">
+    <div class="backup-heading"><h3>设置预算</h3><button class="ibtn" aria-label="关闭预算" onclick="closeSheet()">×</button></div>
+    <div class="budget-periods">${Object.entries(budgetPeriods).map(([key,name])=>
+      `<button class="qbtn ${key===budgetPeriod?'on':''}" aria-pressed="${key===budgetPeriod}" onclick="pickBudgetPeriod('${key}')">${name}</button>`).join('')}</div>
+    <div class="budget-card">
+      <label for="budget-input" style="font-size:13px;font-weight:700">${label}预算（元）</label>
+      <input id="budget-input" inputmode="decimal" autocomplete="off" value="${esc(budgetDraft[budgetPeriod])}" placeholder="输入金额" oninput="budgetDraft[budgetPeriod]=this.value;updateBudgetReadout()"/>
+      <small id="budget-readout">${budgetReadout(used,limit)}</small>
+      <small>可同时设置多个周期。首页日额度按最紧的预算计算，留空可停用本周期。</small>
+    </div>
+    <button class="cta-btn" onclick="commitBudget()">保存预算</button>
+  </section></div>`;
+}
+function budgetReadout(used,limit){
+  return `本期已用 ¥${fmt(used)}${limit>0?` · ${used>limit?'超出':'剩余'} ¥${fmt(Math.abs(limit-used))}`:''}`;
+}
+function updateBudgetReadout(){
+  document.getElementById('budget-readout').textContent=budgetReadout(S.budgetSpent[budgetPeriod]||0,moneyInput(budgetDraft[budgetPeriod]));
+}
+function commitBudget(){
+  const limits={};
+  for(const period of Object.keys(budgetPeriods)){
+    const value=budgetDraft[period].trim();
+    if(value&&!/^\d{1,10}(?:\.\d{1,2})?$/.test(value)){
+      pickBudgetPeriod(period);document.getElementById('budget-input').focus();toast('请输入有效预算金额');return;
+    }
+    limits[period]=moneyInput(value);
+  }
+  S.budgetLimits=limits;
+  if(save()){closeSheet();toast('预算已保存');}
 }
 
 function finishStartup(deadline){

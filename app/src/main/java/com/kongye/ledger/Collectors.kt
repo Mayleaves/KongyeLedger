@@ -2,12 +2,20 @@ package com.kongye.ledger
 import android.app.*
 import android.content.*
 import android.os.Bundle
+import android.os.Build
+import android.provider.Settings
 import android.provider.Telephony
 import android.service.notification.*
 import android.content.pm.PackageManager
 import androidx.work.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.time.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal const val REMINDER_CHANNEL_ID = "ledger"
 
@@ -28,7 +36,17 @@ fun notifyUser(c:Context,title:String,text:String,id:Int){
  val pi=PendingIntent.getActivity(c,id,Intent(c,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra("pending",id==11).putExtra("review",id==15).putExtra("sources",id==12).putExtra("monthly",id==17),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
  nm.notify(id,Notification.Builder(c,REMINDER_CHANNEL_ID).setSmallIcon(com.kongye.ledger.R.drawable.ic_launcher).setContentTitle(title).setContentText(text).setContentIntent(pi).setAutoCancel(true).build())
 }
-fun notificationAccess(c:Context):Boolean = c.packageName in androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(c)
+internal fun paymentListenerComponent(context: Context) = ComponentName(context, PaymentListener::class.java)
+
+fun notificationAccess(c: Context): Boolean {
+ val component = paymentListenerComponent(c)
+ return if (Build.VERSION.SDK_INT >= 27) {
+  c.getSystemService(NotificationManager::class.java).isNotificationListenerAccessGranted(component)
+ } else {
+  Settings.Secure.getString(c.contentResolver, "enabled_notification_listeners").orEmpty()
+   .split(':').any { ComponentName.unflattenFromString(it) == component }
+ }
+}
 
 internal fun smsListeningStatus(context: Context): String {
     val read = context.checkSelfPermission(android.Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
@@ -42,21 +60,58 @@ internal fun smsListeningStatus(context: Context): String {
 
 class PaymentListener:NotificationListenerService(){
  companion object {
-  @Volatile var connected = false
+  private val listenerConnection = MutableStateFlow(false)
+  internal val connection = listenerConnection.asStateFlow()
+  val connected: Boolean get() = connection.value
+  private var boundListener: PaymentListener? = null
+  private val repairing = AtomicBoolean(false)
+
+  internal fun requestConnection(context: Context) {
+   if (connected || repairing.get() || !notificationAccess(context)) return
+   runCatching { requestRebind(paymentListenerComponent(context)) }
+    .onFailure { android.util.Log.w("LedgerCapture", "Unable to request notification listener connection") }
+  }
+
+  internal suspend fun reconnect(context: Context): Boolean {
+   if (!notificationAccess(context)) return false
+   if (connected) return true
+   if (!repairing.compareAndSet(false, true)) return awaitConnection(context)
+   try {
+    val component = paymentListenerComponent(context)
+    if (Build.VERSION.SDK_INT >= 34) {
+     try {
+      requestUnbind(component)
+      delay(300)
+     } finally {
+      if (notificationAccess(context)) requestRebind(component)
+     }
+    } else {
+     requestRebind(component)
+    }
+    return awaitConnection(context)
+   } finally {
+    repairing.set(false)
+   }
+  }
+
+  private suspend fun awaitConnection(context: Context): Boolean =
+   withTimeoutOrNull(5_000) { connection.first { it } } == true && notificationAccess(context)
  }
  override fun onListenerConnected() {
-  connected = true
-  Store.get(this).changed()
+  boundListener = this
+  listenerConnection.value = true
  }
  override fun onListenerDisconnected() {
-  connected = false
-  Store.get(this).changed()
-  requestRebind(ComponentName(this,PaymentListener::class.java))
+  clearConnection()
  }
  override fun onDestroy() {
-  connected = false
-  Store.get(this).changed()
+  clearConnection()
   super.onDestroy()
+ }
+ private fun clearConnection() {
+  if (boundListener !== this) return
+  boundListener = null
+  listenerConnection.value = false
  }
  override fun onNotificationPosted(sbn:StatusBarNotification){
   val store=Store.get(this)

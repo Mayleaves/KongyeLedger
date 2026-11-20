@@ -36,7 +36,8 @@ fun SourceSettings(
     val raw = remember(revision) { s.rows("RawEvent") }
     val allowed = remember(revision) { notificationAccess(context) }
     val enabled = s.setting("notifications", "true") == "true"
-    val online = enabled && allowed && PaymentListener.connected
+    val connected by PaymentListener.connection.collectAsState()
+    val online = enabled && allowed && connected
     val last = raw.asSequence().filter { it.optString("source") == "notification" }.maxOfOrNull { it.optLong("time") }
     var packages by rememberSaveable { mutableStateOf(s.setting("packages")) }
     var senders by rememberSaveable { mutableStateOf(s.setting("senders")) }

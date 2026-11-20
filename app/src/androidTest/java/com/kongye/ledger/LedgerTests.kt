@@ -7,8 +7,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
+import android.os.Build
 import android.os.SystemClock
 import android.content.Intent
+import android.service.notification.NotificationListenerService
+import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 import org.json.JSONObject
 import okhttp3.OkHttpClient
@@ -27,7 +30,13 @@ class LedgerTests:Instrumentation(){
  require(targetContext.packageName.endsWith(".qa")) { "Tests must use the isolated QA package" }
  if (mode == "listener") {
   verifyNotificationListener()
-  result.putString("stream", "PASS: Android notification delivered to PaymentListener, recognized and saved automatically")
+  result.putString("stream", "PASS: Android notification listener reconnected, received a notification and saved it automatically")
+  finish(RESULT_OK, result)
+  return
+ }
+ if (mode == "budgets") {
+  verifyBudgetPeriods()
+  result.putString("stream", "PASS: live daily quota, stale snapshot recovery, past-day history and budget periods")
   finish(RESULT_OK, result)
   return
  }
@@ -234,6 +243,56 @@ class LedgerTests:Instrumentation(){
   }
  }
 
+ private fun verifyBudgetPeriods() {
+  val store = Store.get(targetContext)
+  val date = LocalDate.of(2024, 2, 29)
+  val cycle = { day: LocalDate -> day.withDayOfMonth(1) to day.plusMonths(1).withDayOfMonth(1) }
+  check(BudgetPeriod.DAY.bounds(date, cycle) == (date to LocalDate.of(2024, 3, 1)))
+  check(BudgetPeriod.WEEK.bounds(date, cycle) == (LocalDate.of(2024, 2, 26) to LocalDate.of(2024, 3, 4)))
+  check(BudgetPeriod.MONTH.bounds(date, cycle) == (LocalDate.of(2024, 2, 1) to LocalDate.of(2024, 3, 1)))
+  check(BudgetPeriod.QUARTER.bounds(date, cycle) == (LocalDate.of(2024, 1, 1) to LocalDate.of(2024, 4, 1)))
+  check(BudgetPeriod.YEAR.bounds(date, cycle) == (LocalDate.of(2024, 1, 1) to LocalDate.of(2025, 1, 1)))
+  val today = LocalDate.now()
+  val todayQuota = "quota:$today"
+  val yesterday = today.minusDays(1)
+  val exampleDate = LocalDate.of(2026, 11, 20)
+  val keys = BudgetPeriod.entries.map { it.key } + listOf(todayQuota,"startDay", "quota:$yesterday")
+  val oldSettings = keys.associateWith { store.setting(it) }
+  try {
+   BudgetPeriod.entries.forEach { store.set(it.key, "") }
+   store.set("startDay", "15")
+   check(store.budgetLimits().getValue(BudgetPeriod.MONTH) == 300_000L)
+   check(store.budgetLimits().getValue(BudgetPeriod.WEEK) == 0L)
+   check(BudgetPeriod.MONTH.bounds(LocalDate.of(2024, 3, 1),store::cycle) == (LocalDate.of(2024, 2, 15) to LocalDate.of(2024, 3, 15)))
+   val fixture = listOf(
+    Txn(cents=1000,merchant="本周",category="餐饮",time=date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()),
+    Txn(cents=200,merchant="退款",category="餐饮",direction="退款",time=date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()),
+    Txn(cents=30,merchant="上周",category="餐饮",time=date.minusDays(4).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+   )
+   check(store.budgetSpent(date,fixture).getValue(BudgetPeriod.WEEK)==800L)
+   check(store.budgetSpent(date,fixture).getValue(BudgetPeriod.QUARTER)==830L)
+   store.set("startDay", "1")
+   val earlierBill = Txn(cents=2500,merchant="餐饮",category="餐饮",
+    time=exampleDate.minusDays(2).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+   val example = requireNotNull(store.calculateBudgetBasis(exampleDate,listOf(earlierBill)))
+   check(example.limit==300000L && example.earlierSpending==2500L && example.daysLeft==11L && example.daily==27045L)
+   check(store.calculateBudgetBasis(exampleDate,emptyList())?.daily==27272L)
+   store.set(todayQuota, "27045")
+   store.set("quota:$yesterday", "22222")
+   val days = java.time.temporal.ChronoUnit.DAYS.between(today, today.withDayOfMonth(1).plusMonths(1))
+   check(store.quota(today,emptyList())==300000L/days && store.quota(yesterday,emptyList())==22222L)
+   val todayBill = earlierBill.copy(time=today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+   check(store.quota(today,listOf(todayBill))==store.quota(today,emptyList()))
+   val budgets=BudgetPeriod.entries.associateWith { if(it==BudgetPeriod.DAY)100L else 0L }
+   store.setBudgetLimits(budgets)
+   check(store.budgetLimits()==budgets && store.quota(LocalDate.now())==100L)
+   store.setBudgetLimits(budgets.mapValues { 0L })
+   check(store.quota(LocalDate.now())==0L)
+  } finally {
+   oldSettings.forEach(store::set)
+  }
+ }
+
  private fun verifyNotificationListener() {
   val context = targetContext
   check(notificationAccess(context)) { "Enable notification access for the isolated QA package first" }
@@ -251,7 +310,14 @@ class LedgerTests:Instrumentation(){
   val notificationId = 40241
   try {
    options.forEach(store::set)
+   PaymentListener.requestConnection(context)
    awaitCondition("Android did not connect PaymentListener") { PaymentListener.connected }
+   if (Build.VERSION.SDK_INT >= 34) {
+    NotificationListenerService.requestUnbind(paymentListenerComponent(context))
+    awaitCondition("Android did not disconnect PaymentListener") { !PaymentListener.connected }
+    check(notificationAccess(context)) { "The system should keep notification permission while disconnected" }
+   }
+   check(runBlocking { PaymentListener.reconnect(context) }) { "The listener did not reconnect" }
    manager.createNotificationChannel(NotificationChannel(channelId, "账本联调测试", NotificationManager.IMPORTANCE_LOW))
    manager.notify(notificationId, Notification.Builder(context, channelId)
     .setSmallIcon(R.drawable.ic_launcher)
