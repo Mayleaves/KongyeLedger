@@ -4,6 +4,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.os.SystemClock
 import android.content.Intent
@@ -32,6 +34,21 @@ class LedgerTests:Instrumentation(){
  if (mode == "webdav-password") {
   verifySavedWebDavPassword()
   result.putString("stream", "PASS: WebDAV password is encrypted, reusable, scoped to the saved account, and replaceable")
+  finish(RESULT_OK, result)
+  return
+ }
+ if (mode == "github-updates") {
+  verifyGitHubUpdates()
+  verifyLauncherIcon()
+  result.putString("stream", "PASS: numeric version comparison, stable release history, official APK links, and rate-limit feedback")
+  finish(RESULT_OK, result)
+  return
+ }
+ if (mode == "github-updates-live") {
+  val versions = LedgerUpdates().check(targetContext.packageManager.getPackageInfo(targetContext.packageName, 0).versionName.orEmpty())
+  val releases = versions.getJSONArray("releases")
+  check(releases.length() > 0)
+  result.putString("stream", "PASS: GitHub returned ${releases.length()} releases, latest ${releases.getJSONObject(0).getString("tag")}, comparison ${versions.getInt("comparison")}")
   finish(RESULT_OK, result)
   return
  }
@@ -141,6 +158,51 @@ class LedgerTests:Instrumentation(){
  s.db.clearAllTables();s.set("onboarded","false");result.putString("stream","PASS: keypad, parsing, dedupe, import, local and WebDAV backup, saved WebDAV password, malformed backup, and daily quota")
  finish(RESULT_OK,result)
  }catch(t:Throwable){result.putString("stream",t.stackTraceToString());finish(0,result)}}
+ private fun verifyGitHubUpdates() {
+  val repo = "https://github.com/Mayleaves/KongyeLedger"
+  val tag = "v0.3.20"
+  val catalog = """[
+   {"tag_name":"v0.3.9","name":"Earlier release","assets":[{"state":"uploaded","browser_download_url":"https://example.invalid/KongyeLedger-v0.3.9.apk"}]},
+   {"tag_name":"v0.4.0","draft":true},
+   {"tag_name":"v0.5.0","prerelease":true},
+   {"tag_name":"v0.3.20","name":"Current release","body":"Changes","published_at":"2026-11-19T16:01:00Z","assets":[
+     {"state":"uploaded","browser_download_url":"$repo/releases/download/$tag/KongyeLedger-$tag.apk"}
+   ]}
+  ]"""
+  var code = 200
+  val updates = LedgerUpdates(OkHttpClient.Builder().addInterceptor { chain ->
+   val request = chain.request()
+   check(request.url.toString() == "https://api.github.com/repos/Mayleaves/KongyeLedger/releases?per_page=50")
+   check(request.header("Authorization") == null)
+   Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(code)
+    .message("Fixture").body(catalog.toResponseBody()).build()
+  }.build())
+  val result = updates.check("0.3.10")
+  val history = result.getJSONArray("releases")
+  check(result.getInt("comparison") > 0 && history.length() == 2)
+  check(history.getJSONObject(0).getString("tag") == tag && history.getJSONObject(0).getBoolean("hasApk"))
+  check(!history.getJSONObject(1).getBoolean("hasApk"))
+  check(updates.check("0.3.20").getInt("comparison") == 0)
+  check(updates.check("0.3.21").getInt("comparison") < 0)
+  check(LedgerUpdates.githubUrl("release", "../other") == null)
+  check(LedgerUpdates.githubUrl("repository", "") == repo)
+  code = 403
+  check(runCatching { updates.check("0.3.20") }.exceptionOrNull() is LedgerUpdateException)
+ }
+
+ private fun verifyLauncherIcon() {
+  val icon = targetContext.packageManager.getApplicationIcon(targetContext.packageName)
+  val preview = Bitmap.createBitmap(200, 200, Bitmap.Config.ARGB_8888)
+  icon.setBounds(0, 0, preview.width, preview.height)
+  icon.draw(Canvas(preview))
+  for ((x, y) in listOf(0 to 0, 199 to 0, 0 to 199, 199 to 199)) {
+   check(preview.getPixel(x, y) == 0xfffde0d9.toInt()) { "Launcher background should cover every corner" }
+  }
+  targetContext.openFileOutput("launcher-preview.png", Context.MODE_PRIVATE).use { output ->
+   check(preview.compress(Bitmap.CompressFormat.PNG, 100, output))
+  }
+ }
+
  private fun verifySavedWebDavPassword() {
   val preferences = targetContext.getSharedPreferences("ledger_webdav", Context.MODE_PRIVATE)
   val previous = preferences.all

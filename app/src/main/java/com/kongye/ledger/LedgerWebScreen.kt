@@ -123,9 +123,30 @@ internal fun LedgerWebScreen(
     val presentLedger by rememberUpdatedState(onPresented)
     var davInProgress by remember { mutableStateOf(false) }
     val davSettings = remember(activity) { LedgerDavSettings(activity.applicationContext) }
+    val installedVersion = remember(activity) {
+        activity.packageManager.getPackageInfo(activity.packageName, 0).versionName.orEmpty()
+    }
 
     fun script(code: String) { web?.evaluateJavascript(code, null) }
     fun result(message: String) = script("syncLedger(); toast(${JSONObject.quote(message)});")
+    fun checkUpdates() {
+        scope.launch {
+            val payload = withContext(Dispatchers.IO) {
+                try {
+                    LedgerUpdates().check(installedVersion)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: LedgerUpdateException) {
+                    JSONObject().put("error", error.message)
+                } catch (_: Exception) {
+                    JSONObject().put("error", "暂时无法连接 GitHub，请检查网络后重试")
+                }
+            }
+            if (attempt == pageAttempt && loaded && !loadFailed) {
+                script("finishUpdateCheck(${JSONObject.quote(payload.toString())});")
+            }
+        }
+    }
     fun runWebDav(operation: String, address: String, user: String, password: String, reusePassword: Boolean) {
         if (davInProgress) return
         davInProgress = true
@@ -306,7 +327,13 @@ internal fun LedgerWebScreen(
         }
     }
     val bridge = remember(pageAttempt) {
-        LedgerWebBridge(store, davSettings, onWebDav = { operation, address, user, password, reusePassword ->
+        LedgerWebBridge(store, davSettings, installedVersion, onGitHub = { url ->
+            activity.runOnUiThread {
+                if (attempt == pageAttempt && loaded && !loadFailed) {
+                    openSettings(Intent(Intent.ACTION_VIEW, Uri.parse(url)), "无法打开 GitHub，请确认手机已安装浏览器。")
+                }
+            }
+        }, onWebDav = { operation, address, user, password, reusePassword ->
             activity.runOnUiThread {
                 if (attempt == pageAttempt && loaded && !loadFailed) runWebDav(operation, address, user, password, reusePassword)
             }
@@ -324,6 +351,7 @@ internal fun LedgerWebScreen(
                         })
                     }
                     "startup-error" -> loadFailed = true
+                    "check-updates" -> if (loaded && !loadFailed) checkUpdates()
                     "notification" -> openNotificationSettings()
                     "notification-retry" -> retryNotificationListener()
                     "sms" -> requestSmsAccess()
@@ -468,6 +496,8 @@ internal fun LedgerLoadError(background: Color, onRetry: () -> Unit) {
 private class LedgerWebBridge(
     private val store: Store,
     private val davSettings: LedgerDavSettings,
+    private val installedVersion: String,
+    private val onGitHub: (String) -> Unit,
     private val onWebDav: (String, String, String, String, Boolean) -> Unit,
     private val launch: (String) -> Unit
 ) {
@@ -484,6 +514,11 @@ private class LedgerWebBridge(
         if (format in listOf("json", "csv")) launch("export-$format")
     }
     @JavascriptInterface fun newId(): String = UUID.randomUUID().toString()
+    @JavascriptInterface fun appVersion(): String = installedVersion
+    @JavascriptInterface fun checkUpdates() = launch("check-updates")
+    @JavascriptInterface fun openGitHub(page: String, tag: String) {
+        LedgerUpdates.githubUrl(page, tag)?.let(onGitHub)
+    }
 
     @JavascriptInterface fun webDavConfig(): String = davSettings.publicConfig().toString()
 
