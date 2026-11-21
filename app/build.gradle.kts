@@ -9,8 +9,8 @@ android {
         applicationId = "com.kongye.ledger"
         minSdk = 26
         targetSdk = 36
-        versionCode = 30
-        versionName = "0.3.26"
+        versionCode = 35
+        versionName = "0.3.31"
         testInstrumentationRunner = "com.kongye.ledger.LedgerTests"
     }
     buildTypes {

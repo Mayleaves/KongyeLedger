@@ -33,6 +33,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import java.math.BigDecimal
+import java.math.MathContext
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -554,10 +557,36 @@ fun HomeMascot(s: Store, txns: List<Txn>, today: LocalDate, left: Long, spent: L
     }
 }
 
+private val entryNumber = Regex("""\d{1,10}(?:\.\d{0,2})?""")
+private val entryExpression = Regex("""${entryNumber.pattern}(?:[+\-×÷*/]${entryNumber.pattern})*""")
+
 fun entryAmount(input: String): Long {
-    require(Regex("""\d+(?:\.\d{1,2})?(?:[+−-]\d+(?:\.\d{1,2})?)*""").matches(input))
-    val parts = Regex("""[+−-]?\d+(?:\.\d{1,2})?""").findAll(input)
-    return parts.fold(0L) { total, match -> Math.addExact(total, cents(match.value.replace('−', '-'))) }
+    val expression = input.trim().replace('−', '-')
+    require(expression.length <= 96 && entryExpression.matches(expression)) { "请输入完整算式" }
+    val numbers = entryNumber.findAll(expression).iterator()
+    var term = BigDecimal(numbers.next().value)
+    var sum = BigDecimal.ZERO
+    var subtract = false
+    while (numbers.hasNext()) {
+        val number = numbers.next()
+        val operand = BigDecimal(number.value)
+        val operator = expression[number.range.first - 1]
+        when (operator) {
+            '×', '*' -> term = term.multiply(operand)
+            '÷', '/' -> {
+                require(operand.signum() != 0) { "除数不能为 0" }
+                term = term.divide(operand, MathContext.DECIMAL128)
+            }
+            else -> {
+                sum = if (subtract) sum.subtract(term) else sum.add(term)
+                subtract = operator == '-'
+                term = operand
+            }
+        }
+    }
+    val result = (if (subtract) sum.subtract(term) else sum.add(term)).setScale(2, RoundingMode.HALF_UP)
+    require(result.abs() <= BigDecimal("9999999999.99")) { "计算结果超出可记账金额" }
+    return result.movePointRight(2).longValueExact()
 }
 
 private val defaultMerchantsByCategory = mapOf(

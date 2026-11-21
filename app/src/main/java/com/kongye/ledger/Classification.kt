@@ -40,6 +40,57 @@ fun Store.saveCategoryChoices(choices: List<CategoryChoice>) {
     set("customCategories", json.toString())
 }
 
+private val manualIncomeCategories = listOf("工资", "兼职", "理财", "红包", "收入")
+private val manualExpenseCategories = listOf("餐饮", "交通", "购物", "居住", "娱乐", "医疗", "其他")
+private const val manualCategorySetting = "manualCategories"
+
+private fun Store.savedManualCategories(): JSONObject = runCatching {
+    JSONObject(setting(manualCategorySetting, "{}"))
+}.getOrElse { JSONObject() }
+
+internal fun Store.manualCategories(direction: String): List<String> {
+    val saved = savedManualCategories().opt(direction)
+    fun names(list: JSONArray?) = (0 until (list?.length() ?: 0)).mapNotNull { list?.opt(it) as? String }
+    val ordered = (saved as? JSONObject)?.optJSONArray("order")
+    if (ordered != null) return names(ordered).filter(String::isNotBlank).distinct()
+    val defaults = if (direction == "收入") manualIncomeCategories else {
+        manualExpenseCategories + categoryChoices().map { it.name }.filterNot { it in manualIncomeCategories }
+    }
+    return (defaults + names(saved as? JSONArray)).filter(String::isNotBlank).distinct()
+}
+
+internal fun Store.addManualCategory(direction: String, rawName: String): String = synchronized(this) {
+    val name = rawName.trim()
+    require(direction == "支出" || direction == "收入") { "请选择支出或收入" }
+    require(name.length in 1..16 && name.none { Character.isISOControl(it) }) { "分类名称需为 1 到 16 个字符" }
+    require(name != "全部种类") { "这个名称已用于账单筛选" }
+    require(manualCategories(direction).none { it.equals(name, ignoreCase = true) }) { "$direction 已有同名分类" }
+    saveManualCategoryOrder(direction, manualCategories(direction) + name)
+    name
+}
+
+internal fun Store.changeManualCategory(direction: String, name: String, action: String): Unit = synchronized(this) {
+    require(direction == "支出" || direction == "收入") { "请选择支出或收入" }
+    val categories = manualCategories(direction).toMutableList()
+    val index = categories.indexOf(name)
+    require(index >= 0) { "找不到该分类" }
+    when (action) {
+        "delete" -> categories.removeAt(index)
+        "up", "down" -> {
+            val destination = index + if (action == "up") -1 else 1
+            if (destination !in categories.indices) return@synchronized
+            categories.add(destination, categories.removeAt(index))
+        }
+        else -> error("不支持此操作")
+    }
+    saveManualCategoryOrder(direction, categories)
+}
+
+private fun Store.saveManualCategoryOrder(direction: String, names: List<String>) {
+    set(manualCategorySetting, savedManualCategories()
+        .put(direction, JSONObject().put("order", JSONArray(names))).toString())
+}
+
 fun Store.renameCategory(old: String, next: String) {
     if (old == next) return
     db.runInTransaction {

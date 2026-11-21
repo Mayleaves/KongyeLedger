@@ -67,7 +67,7 @@ import java.util.UUID
 import kotlin.coroutines.resume
 
 private const val LEDGER_PAGE = "https://appassets.androidplatform.net/assets/ledger.html"
-private val timeFormat = DateTimeFormatter.ofPattern("HH:mm")
+private val timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss")
 private val channels = mapOf(
     "wechat" to "com.tencent.mm",
     "alipay" to "com.eg.android.AlipayGphone",
@@ -529,6 +529,25 @@ private class LedgerWebBridge(
     @JavascriptInterface fun newId(): String = UUID.randomUUID().toString()
     @JavascriptInterface fun appVersion(): String = installedVersion
     @JavascriptInterface fun checkUpdates() = launch("check-updates")
+    @JavascriptInterface fun addManualCategory(direction: String, name: String): String = runCatching {
+        JSONObject().put("name", store.addManualCategory(direction, name))
+    }.getOrElse { error ->
+        JSONObject().put("error", if (error is IllegalArgumentException) error.message else "分类保存失败，请重试")
+    }.toString()
+
+    @JavascriptInterface fun changeManualCategory(direction: String, name: String, action: String): String = runCatching {
+        store.changeManualCategory(direction, name, action)
+        ""
+    }.getOrElse { error ->
+        if (error is IllegalArgumentException) error.message.orEmpty() else "分类保存失败，请重试"
+    }
+
+    @JavascriptInterface fun calculateEntryAmount(expression: String): String = runCatching {
+        JSONObject().put("cents", entryAmount(expression))
+    }.getOrElse { error ->
+        JSONObject().put("error", if (error is IllegalArgumentException) error.message else "无法计算这条算式")
+    }.toString()
+
     @JavascriptInterface fun openGitHub(page: String, tag: String) {
         LedgerUpdates.githubUrl(page, tag)?.let(onGitHub)
     }
@@ -580,6 +599,8 @@ private class LedgerWebBridge(
             }
             statuses.put(channel, status)
         }
+        val expenseCategories = store.manualCategories("支出")
+        val incomeCategories = store.manualCategories("收入")
         JSONObject().put("txns", JSONArray(entries.map(::toWeb)))
             .put("firstMetDate", store.setting("firstMetDate", today.toString()))
             .put("budgetLimits", JSONObject(store.budgetLimits().mapKeys { it.key.id }))
@@ -598,7 +619,8 @@ private class LedgerWebBridge(
                 .put("reminders", if (store.setting("reminders", "true") == "true") reminderPermissionStatus(store.ctx) else "off")
                 .put("battery", store.ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(store.ctx.packageName)))
             .put("channels", switches)
-            .put("categories", JSONArray(store.categoryChoices().map { it.name }))
+            .put("categories", JSONArray((expenseCategories + incomeCategories).distinct()))
+            .put("manualCategories", JSONObject().put("支出", JSONArray(expenseCategories)).put("收入", JSONArray(incomeCategories)))
             .toString()
     }
 
@@ -690,7 +712,7 @@ private class LedgerWebBridge(
     }
 }
 
-private fun toWeb(item: Txn): JSONObject {
+internal fun toWeb(item: Txn): JSONObject {
     val date = Instant.ofEpochMilli(item.time).atZone(ZoneId.systemDefault())
     return JSONObject().put("id", item.id).put("date", date.toLocalDate().toString())
         .put("time", date.format(timeFormat)).put("cents", item.cents).put("merchant", item.merchant)
@@ -700,16 +722,17 @@ private fun toWeb(item: Txn): JSONObject {
         .put("auto", item.events.isNotEmpty()).put("merged", item.events.size > 1)
 }
 
-private fun fromWeb(row: JSONObject, previous: Txn?): Txn {
+internal fun fromWeb(row: JSONObject, previous: Txn?): Txn {
     val amount = row.getLong("cents")
     val direction = row.getString("dir")
     val status = row.getString("status")
     require(amount > 0 && direction in listOf("支出", "收入", "退款", "转账") &&
         status in listOf("待确认", "已入账", "已忽略"))
-    val date = row.getString("date")
-    val time = row.getString("time")
-    val timestamp = if (previous != null && toWeb(previous).let { it.getString("date") == date && it.getString("time") == time }) previous.time
-        else LocalDateTime.parse("${date}T${time}").atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val dateTime = LocalDateTime.parse(row.getString("date") + "T" + row.getString("time"))
+    val zone = ZoneId.systemDefault()
+    val previousTime = previous?.let { Instant.ofEpochMilli(it.time).atZone(zone).toLocalDateTime() }
+    val timestamp = if (previous != null && previousTime?.withNano(0) == dateTime) previous.time
+        else dateTime.atZone(zone).toInstant().toEpochMilli()
     return (previous ?: Txn(id = row.getString("id"), cents = amount, merchant = "", category = "其他")).copy(
         cents = amount, merchant = row.getString("merchant").take(300), category = row.getString("category").take(80),
         direction = direction, time = timestamp, source = previous?.source ?: "手动", status = status,

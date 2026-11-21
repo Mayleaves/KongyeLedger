@@ -40,6 +40,12 @@ class LedgerTests:Instrumentation(){
   finish(RESULT_OK, result)
   return
  }
+ if (mode == "manual-entry") {
+  verifyManualEntry()
+  result.putString("stream", "PASS: independent entry categories survive backup and restore, and arithmetic keeps cent precision")
+  finish(RESULT_OK, result)
+  return
+ }
  if (mode == "webdav-password") {
   verifySavedWebDavPassword()
   result.putString("stream", "PASS: WebDAV password is encrypted, reusable, scoped to the saved account, and replaceable")
@@ -240,6 +246,50 @@ class LedgerTests:Instrumentation(){
    val editor = preferences.edit().clear()
    previous.forEach { (key, value) -> editor.putString(key, value as String) }
    check(editor.commit())
+  }
+ }
+
+ private fun verifyManualEntry() {
+  check(entryAmount("19.90+3.20−1.05") == 2205L)
+  check(entryAmount("2+3×4−6÷2") == 1100L)
+  check(entryAmount("0.1+0.2") == 30L && entryAmount("1÷8") == 13L)
+  check(entryAmount("2.×3") == 600L)
+  check(runCatching { entryAmount("1÷0") }.isFailure)
+  check(runCatching { entryAmount("1+") }.isFailure)
+  check(runCatching { entryAmount("9999999999×2") }.isFailure)
+  val store = Store.get(targetContext)
+  val previous = store.setting("manualCategories")
+  try {
+   store.set("manualCategories", "{\"支出\":[\"旧版测试分类\"]}")
+   check("旧版测试分类" in store.manualCategories("支出"))
+   val expense = "测试出${System.currentTimeMillis()}"
+   val income = "测试入${System.currentTimeMillis()}"
+   check(store.addManualCategory("支出", " $expense ") == expense)
+   check(store.addManualCategory("收入", income) == income)
+   check(expense in store.manualCategories("支出") && expense !in store.manualCategories("收入"))
+   check(income in store.manualCategories("收入") && income !in store.manualCategories("支出"))
+   check(runCatching { store.addManualCategory("支出", expense) }.isFailure)
+   check(runCatching { store.addManualCategory("收入", "全部种类") }.isFailure)
+   store.changeManualCategory("支出", expense, "up")
+   check(store.manualCategories("支出").takeLast(2) == listOf(expense, "旧版测试分类"))
+   store.changeManualCategory("支出", "餐饮", "delete")
+   check("餐饮" !in store.manualCategories("支出"))
+   store.changeManualCategory("收入", income, "up")
+   check(store.manualCategories("收入").takeLast(2) == listOf(income, "收入"))
+   val backup = store.backup()
+   store.set("manualCategories", "{}")
+   store.restore(backup)
+   check(store.manualCategories("支出").takeLast(2) == listOf(expense, "旧版测试分类"))
+   check("餐饮" !in store.manualCategories("支出") && income in store.manualCategories("收入"))
+   val row = toWeb(Txn(cents = 1200, merchant = "测试", category = "餐饮"))
+       .put("date", "2026-11-21").put("time", "09:08:07")
+   val precise = fromWeb(row, null)
+   check(toWeb(precise).getString("time") == "09:08:07" && precise.category == "餐饮")
+   val withMillis = precise.copy(time = precise.time + 456)
+   check(fromWeb(row, withMillis).time == withMillis.time)
+   check(toWeb(fromWeb(row.put("time", "09:08"), null)).getString("time") == "09:08:00")
+  } finally {
+   store.set("manualCategories", previous)
   }
  }
 
