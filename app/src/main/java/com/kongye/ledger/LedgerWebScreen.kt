@@ -29,9 +29,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -70,8 +73,7 @@ import java.util.UUID
 import kotlin.coroutines.resume
 
 private const val LEDGER_PAGE = "https://appassets.androidplatform.net/assets/ledger.html"
-private val ledgerInsets = WindowInsetsCompat.Type.systemBars() or
-    WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
+private val ledgerSystemInsets = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
 private val timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss")
 private val channels = mapOf(
     "wechat" to "com.tencent.mm",
@@ -429,7 +431,13 @@ internal fun LedgerWebScreen(
         web?.evaluateJavascript("navigateBack()") { if (it == "\"exit\"") activity.finish() }
     }
     val background = colorResource(R.color.ledger_launch_background)
-    Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+    val webViewHandlesIme = remember(activity) {
+        WebViewCompat.getCurrentWebViewPackage(activity)?.versionName
+            ?.substringBefore('.')?.toIntOrNull()?.let { it >= 139 } == true
+    }
+    val contentInsets = if (webViewHandlesIme) WindowInsets.systemBars.union(WindowInsets.displayCutout)
+        else WindowInsets.safeDrawing
+    Box(Modifier.fillMaxSize().windowInsetsPadding(contentInsets)) {
         if (!loadFailed) {
             key(pageAttempt) {
                 AndroidView(
@@ -445,9 +453,11 @@ internal fun LedgerWebScreen(
                                 settings.allowContentAccess = false
                                 settings.blockNetworkLoads = true
                                 ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
-                                    // The Compose container already fits the WebView above the IME and system bars.
+                                    // Let recent WebViews resize their visual viewport without resizing the native view.
+                                    val fittedTypes = if (webViewHandlesIme) ledgerSystemInsets
+                                        else ledgerSystemInsets or WindowInsetsCompat.Type.ime()
                                     val fittedInsets = WindowInsetsCompat.Builder(insets)
-                                        .setInsets(ledgerInsets, Insets.NONE)
+                                        .setInsets(fittedTypes, Insets.NONE)
                                         .build()
                                     ViewCompat.onApplyWindowInsets(view, fittedInsets)
                                 }
