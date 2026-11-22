@@ -313,7 +313,7 @@ fun SplashScreenOverlay(
     } else null
 
     val background = colorResource(R.color.ledger_launch_background)
-    val startScale = dimensionResource(R.dimen.ledger_splash_mascot_height) / 188.dp
+    val startingMascotSize = dimensionResource(R.dimen.ledger_splash_mascot_height)
     fun reveal(from: Float) = FastOutSlowInEasing.transform(((entrance.value - from) / (1f - from)).coerceIn(0f, 1f))
     BoxWithConstraints(
         modifier = Modifier
@@ -323,11 +323,15 @@ fun SplashScreenOverlay(
             .clickable(indication = null, interactionSource = null, onClickLabel = "进入账本") { (onSkip ?: finish)() },
         contentAlignment = Alignment.Center
     ) {
-        val rise = (maxHeight * .085f).coerceIn(38.dp, 72.dp)
+        val layoutScale = minOf(1f, maxWidth / 390.dp, maxHeight / 620.dp)
+        val textScale = layoutScale.coerceAtLeast(.875f)
+        val mascotSize = 188.dp * layoutScale
+        val startScale = (startingMascotSize / mascotSize).coerceAtMost(1f)
+        val rise = (maxHeight * .085f).coerceAtMost(72.dp)
         Canvas(Modifier.fillMaxSize()) {
             val glow = reveal(.12f)
             val center = Offset(size.width / 2f, size.height / 2f - rise.toPx() + 12.dp.toPx())
-            val radius = 125.dp.toPx()
+            val radius = (125.dp * layoutScale).toPx()
             drawCircle(
                 Brush.radialGradient(
                     0f to Color(0xfffcc0b3).copy(alpha = glow * .36f),
@@ -345,18 +349,22 @@ fun SplashScreenOverlay(
                 Color(0xfffcc0b3).copy(alpha = glow), Color(0xffda746a).copy(alpha = glow))
         }
 
-        CoinBadge(Modifier.offset(x = 62.dp, y = -rise - 77.dp).size(40.dp).graphicsLayer {
-            val fraction = reveal(.22f)
-            alpha = fraction
-            translationY = -66.dp.toPx() * (1f - fraction)
-            rotationZ = -25f * (1f - fraction)
-            scaleX = .55f + .45f * fraction
-            scaleY = scaleX
-        })
+        CoinBadge(
+            Modifier.offset(x = 62.dp * layoutScale, y = -rise - 77.dp * layoutScale)
+                .size(40.dp * layoutScale)
+                .graphicsLayer {
+                    val fraction = reveal(.22f)
+                    alpha = fraction
+                    translationY = -66.dp.toPx() * (1f - fraction)
+                    rotationZ = -25f * (1f - fraction)
+                    scaleX = .55f + .45f * fraction
+                    scaleY = scaleX
+                }
+        )
         Image(
             painter = painterResource(R.drawable.v8_happy),
             contentDescription = null,
-            modifier = Modifier.size(188.dp).graphicsLayer {
+            modifier = Modifier.size(mascotSize).graphicsLayer {
                 val fraction = reveal(0f)
                 translationY = -rise.toPx() * fraction
                 scaleX = startScale + (1f - startScale) * fraction
@@ -366,7 +374,7 @@ fun SplashScreenOverlay(
 
         Column(
             modifier = Modifier.align(Alignment.TopCenter)
-                .offset(y = maxHeight / 2 - rise + 104.dp)
+                .offset(y = maxHeight / 2 - rise + 104.dp * layoutScale)
                 .padding(horizontal = 16.dp)
                 .graphicsLayer {
                     val fraction = reveal(.23f)
@@ -375,11 +383,11 @@ fun SplashScreenOverlay(
                 },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("空叶记账", color = Color(0xff3d3126), fontSize = 28.sp,
-                lineHeight = 34.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+            Text("空叶记账", color = Color(0xff3d3126), fontSize = 28.sp * textScale,
+                lineHeight = 34.sp * textScale, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
             Text("付钱的那一刻，噗噗替你记下", color = Color(0xff968471), fontSize = 13.sp, lineHeight = 18.sp)
-            Spacer(Modifier.height(17.dp))
+            Spacer(Modifier.height(17.dp * layoutScale))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(R.drawable.stamp_a_happy, R.drawable.stamp_a_ok, R.drawable.stamp_a_sad).forEachIndexed { index, stamp ->
                     Image(
@@ -395,7 +403,7 @@ fun SplashScreenOverlay(
                     )
                 }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp * layoutScale))
             Canvas(Modifier.width(168.dp).height(7.dp)) {
                 val corners = CornerRadius(size.height / 2)
                 val fillWidth = size.width * progress.value
