@@ -9,8 +9,10 @@ import android.graphics.Canvas
 import android.os.Bundle
 import android.os.Build
 import android.os.SystemClock
+import android.os.Process
 import android.content.Intent
 import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 import org.json.JSONObject
@@ -31,6 +33,12 @@ class LedgerTests:Instrumentation(){
  if (mode == "listener") {
   verifyNotificationListener()
   result.putString("stream", "PASS: Android notification listener reconnected, received a notification and saved it automatically")
+  finish(RESULT_OK, result)
+  return
+ }
+ if (mode == "shopping-payments") {
+  verifyShoppingPayments()
+  result.putString("stream", "PASS: shopping channels, amount and merchant extraction, duplicate filtering and unpaid notice rejection")
   finish(RESULT_OK, result)
   return
  }
@@ -343,6 +351,50 @@ class LedgerTests:Instrumentation(){
   }
  }
 
+ private fun verifyShoppingPayments() {
+  val context = targetContext
+  val store = Store.get(context)
+  store.db.clearAllTables()
+  store.set("autoGuard", "true")
+  store.set("notifications", "true")
+  shoppingPaymentApps.keys.forEach { store.set("channel:$it", "true") }
+  val time = System.currentTimeMillis()
+  fun notice(channel: String, id: Int, title: String, body: String, expanded: Boolean = false): StatusBarNotification {
+   val pkg = paymentNotificationChannels.getValue(channel)
+   val builder = Notification.Builder(context, "fixture").setContentTitle(title)
+   if (expanded) builder.setStyle(Notification.InboxStyle().addLine(body))
+   else builder.setContentText(body)
+   return StatusBarNotification(pkg, pkg, id, null, Process.myUid(), Process.myPid(), 0,
+    builder.build(), Process.myUserHandle(), time)
+  }
+  val douyin = notice("douyin", 1, "订单支付成功", "店铺：测试好物；实付金额 ￥23.50，原价 ￥30.00")
+  val xianyu = notice("xianyu", 2, "你已付款", "卖家：测试二手店，48.00元，运费 5.00元", expanded = true)
+  val alibaba = notice("alibaba", 3, "1688 付款成功", "交易金额：￥108.40")
+  listOf(douyin, xianyu, alibaba).forEach { check(capturePaymentNotification(store, it)) }
+  val txns = store.txns().associateBy { it.cents }
+  check(txns.keys == setOf(2350L, 4800L, 10840L))
+  check(txns.values.all { it.direction == "支出" && it.source == "自动" && it.category == "购物" })
+  check(txns.getValue(2350L).merchant == "测试好物" && txns.getValue(2350L).status == "已入账")
+  check(txns.getValue(4800L).merchant == "测试二手店" && txns.getValue(4800L).status == "已入账")
+  check(txns.getValue(10840L).merchant == "阿里巴巴" && txns.getValue(10840L).status == "待确认")
+  check(!capturePaymentNotification(store, douyin))
+  val ignored = listOf(
+   notice("douyin", 4, "抖音商城", "付款成功后可参与抽奖，奖品价值 ¥89.00"),
+   notice("xianyu", 5, "订单待付款", "实付金额：￥40.00，请付款"),
+   notice("alibaba", 6, "退款成功", "订单已付款 ￥50.00，退款金额 ￥50.00"),
+   notice("xianyu", 7, "卖家发货了", "订单金额 ¥12.00"),
+   notice("douyin", 8, "付款成功", "订单金额属于两个订单，分别是 ￥10.00 和 ￥20.00"),
+   notice("douyin", 11, "抖音", "付款成功 2026年11月24日 12:10")
+  )
+  check(ignored.none { capturePaymentNotification(store, it) })
+  check(store.rows("RawEvent").size == 5) { "Shopping promos and routine notifications must not be stored" }
+  store.set("channel:" + paymentNotificationChannels.getValue("douyin"), "false")
+  check(!capturePaymentNotification(store, notice("douyin", 9, "付款成功", "付款金额 ￥11.20")))
+  store.set("autoGuard", "false")
+  check(!capturePaymentNotification(store, notice("alibaba", 10, "付款成功", "付款金额 ￥13.20")))
+  check(store.txns().size == 3)
+ }
+
  private fun verifyNotificationListener() {
   val context = targetContext
   check(notificationAccess(context)) { "Enable notification access for the isolated QA package first" }
@@ -380,6 +432,7 @@ class LedgerTests:Instrumentation(){
    check(txn.source == "自动" && txn.status == "已入账" && txn.events.size == 1)
    val event = store.rows("RawEvent").single { it.optString("id") == txn.events.single() }
    check(event.optString("sender") == context.packageName && event.optString("source") == "notification")
+   check(runBlocking { PaymentListener.checkTodaysNotifications(context) } == 0) { "Scanning active notifications must not duplicate a saved payment" }
   } finally {
    manager.cancel(notificationId)
    manager.deleteNotificationChannel(channelId)

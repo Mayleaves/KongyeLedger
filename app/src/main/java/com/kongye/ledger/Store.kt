@@ -103,7 +103,8 @@ class Store private constructor(val ctx:Context) {
   val txn=result.transaction
   if(txn==null){record("未识别",result.reason);return null}
   val all=txns()
-  txn.category=if(txn.direction in listOf("收入","退款")) "收入" else classify(txn.merchant)
+  txn.category=if(txn.direction in listOf("收入","退款")) "收入"
+      else classify(txn.merchant).takeUnless { it=="其他" } ?: txn.category
   val similar=all.filter { it.status!="已忽略" && it.cents==txn.cents && it.direction==txn.direction &&
       kotlin.math.abs(it.time-txn.time)<=180000 }
   val forbidden=if(similar.isNotEmpty())rows("NoMerge")else emptyList()
@@ -117,13 +118,16 @@ class Store private constructor(val ctx:Context) {
    val sameAccount=txn.account.isNotBlank() && txn.account==candidate.account
    val conflictingSerial=txn.serial.isNotBlank() && candidate.serial.isNotBlank() && txn.serial!=candidate.serial
    val conflictingAccount=txn.account.isNotBlank() && candidate.account.isNotBlank() && txn.account!=candidate.account
-   val unknown="待确认商户"
-   val sameMerchant=txn.merchant!=unknown && candidate.merchant!=unknown &&
+   val txnMerchantUnknown=txn.merchant=="待确认商户" || txn.merchant==shoppingPaymentApps[sender]
+   val candidateMerchantUnknown=candidate.merchant=="待确认商户" || related.any {
+    candidate.merchant==shoppingPaymentApps[it.optString("sender")]
+   }
+   val sameMerchant=!txnMerchantUnknown && !candidateMerchantUnknown &&
        (txn.merchant.contains(candidate.merchant,true)||candidate.merchant.contains(txn.merchant,true))
    val blocked=forbidden.any { pair -> (pair.optString("a")==id && pair.optString("b") in candidate.events) ||
        (pair.optString("b")==id && pair.optString("a") in candidate.events) }
    candidate.source=="自动" && !blocked && !sameOrigin && !conflictingSerial && !conflictingAccount &&
-       (sameSerial || differentSource && (sameAccount && (sameMerchant || txn.merchant==unknown || candidate.merchant==unknown) || sameMerchant))
+       (sameSerial || differentSource && (sameAccount && (sameMerchant || txnMerchantUnknown || candidateMerchantUnknown) || sameMerchant))
   }
   val existing=matches.singleOrNull()?.takeIf { similar.size==1 }
   if(existing!=null && remind){

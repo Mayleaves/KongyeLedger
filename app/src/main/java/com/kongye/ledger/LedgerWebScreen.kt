@@ -75,11 +75,6 @@ import kotlin.coroutines.resume
 private const val LEDGER_PAGE = "https://appassets.androidplatform.net/assets/ledger.html"
 private val ledgerSystemInsets = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
 private val timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss")
-private val channels = mapOf(
-    "wechat" to "com.tencent.mm",
-    "alipay" to "com.eg.android.AlipayGphone",
-    "unionpay" to "com.unionpay"
-)
 
 private data class WebDavResult(val success: Boolean, val message: String, val settingsSaved: Boolean = false)
 
@@ -346,6 +341,31 @@ internal fun LedgerWebScreen(
             result(message)
         }
     }
+    fun checkTodaysNotifications() {
+        if (store.setting("autoGuard", "true") != "true") {
+            result("请先开启自动记账。")
+            return
+        }
+        if (!PaymentListener.connected || store.setting("notifications", "true") != "true") {
+            retryNotificationListener()
+            return
+        }
+        scope.launch {
+            val message = try {
+                val found = PaymentListener.checkTodaysNotifications(activity)
+                when {
+                    found == null -> "通知监听未连接，请重新连接后再试。"
+                    found == 0 -> "通知栏里没有可补记的今日付款通知。"
+                    else -> "已处理 $found 条付款通知，可在流水中查看或核对。"
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: RuntimeException) {
+                "读取通知栏失败，请检查通知读取权。"
+            }
+            result(message)
+        }
+    }
     val bridge = remember(pageAttempt) {
         LedgerWebBridge(store, davSettings, installedVersion, onGitHub = { url ->
             activity.runOnUiThread {
@@ -374,6 +394,7 @@ internal fun LedgerWebScreen(
                     "check-updates" -> if (loaded && !loadFailed) checkUpdates()
                     "notification" -> openNotificationSettings()
                     "notification-retry" -> retryNotificationListener()
+                    "notification-check-today" -> checkTodaysNotifications()
                     "sms" -> requestSmsAccess()
                     "reminders" -> requestReminderAccess()
                     "battery" -> openSettings(
@@ -542,7 +563,7 @@ private class LedgerWebBridge(
     @JavascriptInterface fun startupFailed() = launch("startup-error")
 
     @JavascriptInterface fun configure(action: String) {
-        if (action in listOf("notification", "notification-retry", "sms", "reminders", "battery")) launch(action)
+        if (action in listOf("notification", "notification-retry", "notification-check-today", "sms", "reminders", "battery")) launch(action)
     }
     @JavascriptInterface fun importFile(format: String) {
         if (format in listOf("json", "csv", "bills")) launch("import-$format")
@@ -602,7 +623,7 @@ private class LedgerWebBridge(
             if (date != today) quotas.put(date.toString(), store.quota(date, entries))
         }
         val switches = JSONObject()
-        channels.forEach { (key, pkg) -> switches.put(key, store.notificationChannelEnabled(pkg)) }
+        paymentNotificationChannels.forEach { (key, pkg) -> switches.put(key, store.notificationChannelEnabled(pkg)) }
         switches.put("sms", store.setting("sms", "true") == "true")
         val autoGuard = store.setting("autoGuard", "true") == "true"
         val hasNotificationAccess = notificationAccess(store.ctx)
@@ -688,8 +709,8 @@ private class LedgerWebBridge(
             }
             if (settings.has("autoGuard")) store.set("autoGuard", settings.getBoolean("autoGuard").toString())
             settings.optJSONObject("channels")?.let { switches ->
-                channels.forEach { (key, pkg) ->
-                    val enabled = switches.getBoolean(key)
+                paymentNotificationChannels.forEach { (key, pkg) ->
+                    val enabled = switches.optBoolean(key, store.notificationChannelEnabled(pkg))
                     if (enabled != store.notificationChannelEnabled(pkg)) store.set("channel:$pkg", enabled.toString())
                 }
                 val sms = switches.getBoolean("sms").toString()

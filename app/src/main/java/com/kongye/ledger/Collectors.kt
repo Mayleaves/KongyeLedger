@@ -15,7 +15,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.coroutines.resume
 
 internal const val REMINDER_CHANNEL_ID = "ledger"
 
@@ -96,6 +99,22 @@ class PaymentListener:NotificationListenerService(){
 
   private suspend fun awaitConnection(context: Context): Boolean =
    withTimeoutOrNull(5_000) { connection.first { it } } == true && notificationAccess(context)
+
+  internal suspend fun checkTodaysNotifications(context: Context): Int? {
+   val listener = boundListener?.takeIf { notificationAccess(context) } ?: return null
+   val since = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+   val notifications = listener.activeNotifications.orEmpty().filter { it.postTime >= since }
+   return suspendCancellableCoroutine { continuation ->
+    captureExecutor.execute {
+     val count = notifications.sortedBy { it.postTime }.count { sbn ->
+      runCatching { capturePaymentNotification(Store.get(listener), sbn) }
+       .onFailure { android.util.Log.w("LedgerCapture", "Notification processing failed") }
+       .getOrDefault(false)
+     }
+     continuation.resume(count)
+    }
+   }
+  }
  }
  override fun onListenerConnected() {
   boundListener = this
@@ -114,30 +133,36 @@ class PaymentListener:NotificationListenerService(){
   listenerConnection.value = false
  }
  override fun onNotificationPosted(sbn:StatusBarNotification){
-  val store=Store.get(this)
+  captureExecutor.execute {
+   runCatching { capturePaymentNotification(Store.get(this), sbn) }
+    .onFailure { android.util.Log.w("LedgerCapture","Notification processing failed") }
+  }
+ }
+}
+
+internal fun capturePaymentNotification(store: Store, sbn: StatusBarNotification): Boolean {
+  if(sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0)return false
+  val pkg=sbn.packageName
   if(store.setting("autoGuard","true")!="true" || store.setting("notifications","true")!="true" ||
-      !store.notificationChannelEnabled(sbn.packageName))return
-  val allowed=listOf("com.tencent.mm","com.eg.android.AlipayGphone","com.unionpay")+
-      store.setting("packages").split(",").map(String::trim).filter(String::isNotEmpty)
-  if(sbn.packageName !in allowed)return
+      !store.notificationChannelEnabled(pkg))return false
+  if(pkg !in paymentNotificationChannels.values &&
+      store.setting("packages").split(",").none { it.trim()==pkg })return false
   val extra=sbn.notification.extras
-  val title=extra.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
-  if(sbn.packageName=="com.tencent.mm"&&title.trim()!="微信支付")return
+  val shopping = pkg in shoppingPaymentApps
+  val title=extra.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty().ifBlank {
+   if(shopping) extra.getCharSequence(Notification.EXTRA_TITLE_BIG)?.toString().orEmpty() else ""
+  }
+  if(pkg=="com.tencent.mm"&&title.trim()!="微信支付")return false
   val text=extra.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
   val big=extra.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
   val sub=extra.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
-  val body=big.ifBlank { text }
-  if(title.isBlank() && body.isBlank() && sub.isBlank())return
-  if(sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0)return
-  val pkg=sbn.packageName
-  val time=sbn.postTime
-  val key=sbn.key
-  captureExecutor.execute {
-   runCatching {
-    store.ingest("notification",pkg,title,body,time,key,text,big,sub)
-   }.onFailure { android.util.Log.w("LedgerCapture","Notification processing failed") }
+  val body=big.ifBlank {
+   if(shopping) extra.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.joinToString("\n").orEmpty().ifBlank { text }
+   else text
   }
- }
+  if(title.isBlank() && body.isBlank() && sub.isBlank())return false
+  if(shopping && !isShoppingPayment(listOf(title,body,text,sub).joinToString("\n")))return false
+  return store.ingest("notification",pkg,title,body,sbn.postTime,sbn.key,text,big,sub)!=null
 }
 private val captureExecutor=java.util.concurrent.Executors.newSingleThreadExecutor()
 private val scanLock=Any()
@@ -189,7 +214,23 @@ fun readSms(c:Context):Int = synchronized(scanLock) {
 }
 fun schedule(c:Context){scheduleReview(c);WorkManager.getInstance(c).enqueueUniquePeriodicWork("ledger-watch",ExistingPeriodicWorkPolicy.KEEP,PeriodicWorkRequestBuilder<WatchWorker>(6,TimeUnit.HOURS).build())}
 class BootReceiver:android.content.BroadcastReceiver(){override fun onReceive(c:Context,i:Intent){if(i.action==Intent.ACTION_BOOT_COMPLETED)schedule(c)}}
-class WatchWorker(c:Context,p:WorkerParameters):Worker(c,p){override fun doWork():Result=try{readSms(applicationContext);val s=Store.get(applicationContext);if(s.setting("notifications","true")=="true" && !PaymentListener.connected && notificationAccess(applicationContext))notifyUser(applicationContext,"噗噗需要恢复值班","请打开数据来源，检查通知使用权",12);s.takeDaySnapshot();val cutoff=System.currentTimeMillis()-s.setting("retention","180").toLong()*86400000; s.rows("RawEvent").filter{it.getLong("time")<cutoff}.forEach{s.delete(it.getString("id"))};Result.success()}catch(e:Exception){Result.retry()}}
+class WatchWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+ override fun doWork(): Result = try {
+  readSms(applicationContext)
+  val store = Store.get(applicationContext)
+  if (store.setting("autoGuard", "true") == "true" && store.setting("notifications", "true") == "true" &&
+      !PaymentListener.connected && notificationAccess(applicationContext)) {
+   val connected = runCatching { runBlocking { PaymentListener.reconnect(applicationContext) } }.getOrDefault(false)
+   if (!connected) notifyUser(applicationContext, "噗噗需要恢复值班", "请打开数据来源，检查通知使用权", 12)
+  }
+  store.takeDaySnapshot()
+  val cutoff = System.currentTimeMillis() - store.setting("retention", "180").toLong() * 86400000
+  store.rows("RawEvent").filter { it.getLong("time") < cutoff }.forEach { store.delete(it.getString("id")) }
+  Result.success()
+ } catch (_: Exception) {
+  Result.retry()
+ }
+}
 
 private fun nextReview(c:Context): OneTimeWorkRequest {
  val now = ZonedDateTime.now()

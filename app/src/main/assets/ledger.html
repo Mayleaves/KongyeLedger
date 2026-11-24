@@ -815,7 +815,7 @@ const arg=v=>esc(JSON.stringify(v));
 const DEF = {
   tab:'home', calSub:'cal', statsSub:'overview',
   firstMetDate:TODAY, budgetLimits:{day:0,week:0,month:300000,quarter:0,year:0}, budgetSpent:{}, autoGuard:true,
-  channels:{wechat:true,alipay:true,sms:true,unionpay:false},
+  channels:{wechat:true,alipay:true,sms:true,unionpay:false,douyin:true,xianyu:true,alibaba:true},
   q:'', datePreset:'all', dateFrom:MONTH+'-01', dateTo:TODAY, dirFilter:'全部', catFilter:'全部种类',
   calMonth:MONTH, selDay:TDAY, trendSeries:['out','inc','net'], trendPeriod:'day', trendSelected:null,
   trendFrom:MONTH+'-01', trendTo:TODAY, trendCategories:{'收入':[],'支出':[]}, postedOnly:false, donutMode:'支出', worthMood:'happy',
@@ -1900,7 +1900,7 @@ function renderAutoAndMine(){
   </div>`;
 }
 
-const bundledRelease={tag:'v1.0.0',title:'空叶记账 v1.0.0',notes:'- 统一「我的」页自动记账卡片布局。\n- 修复累计入账猪头图标被裁切的问题。'};
+const bundledRelease={tag:'v1.0.1',title:'空叶记账 v1.0.1',notes:'- 增加抖音、闲鱼和阿里巴巴 1688 的付款通知识别。\n- 支持补查仍留在通知栏里的今日付款通知。'};
 let githubCatalog=null, updateBusy=false, updateError='';
 const versionLabel=version=>version?'v'+version.replace(/^v/,''):'未知版本';
 function openUpdateSheet(tab,refresh=false){
@@ -2003,10 +2003,11 @@ function renderUpdateBody(){
     </details>`).join('')}${updateError?retry:''}`;
 }
 
-/* ==================== 自动记账解析与模拟场景 ==================== */
+/* ==================== 自动记账与通知监听 ==================== */
 const LISTENING_CHANNELS=[
   ['wechat','微信支付通知'],['alipay','支付宝通知'],
-  ['sms','银行动账短信'],['unionpay','云闪付通知']
+  ['sms','银行动账短信'],['unionpay','云闪付通知'],
+  ['douyin','抖音付款通知'],['xianyu','闲鱼付款通知'],['alibaba','阿里巴巴 1688 付款通知']
 ];
 let listenerReconnecting=false;
 function setListenerReconnect(active){listenerReconnecting=active;if(S.tab==='auto')render();}
@@ -2038,6 +2039,9 @@ function renderListeningSettings(){
       <div class="mine-heading"><h2 id="mine-channels-title">监听渠道</h2></div>
       ${renderListenerRecovery()}
       <div class="card mine-group">${LISTENING_CHANNELS.map(renderListeningChannel).join('')}</div>
+      ${notificationListeningState()==='active'?`<div class="card mine-group" style="margin-top:10px">
+        ${mineRow('bell','补查今日付款通知','扫描通知栏中仍可读取的今日通知',"Ledger.configure('notification-check-today')")}
+      </div>`:''}
       <p class="mine-auto-meta">已合并 ${mergeCount} 笔重复通知 · ${Object.keys(S.rules).length} 条商户规则</p>
     </section>
     <section aria-labelledby="mine-permissions-title">
