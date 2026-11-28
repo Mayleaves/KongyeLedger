@@ -13,6 +13,11 @@
     <service android:name=".PaymentListener" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
       <intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter>
     </service>
+    <service android:name=".PaymentScreenService" android:label="@string/payment_screen_name"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">
+      <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
+      <meta-data android:name="android.accessibilityservice" android:resource="@xml/payment_screen_service"/>
+    </service>
     <receiver android:name=".SmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">
       <intent-filter><action android:name="android.provider.Telephony.SMS_RECEIVED"/></intent-filter>
     </receiver>

@@ -9,8 +9,8 @@ android {
         applicationId = "com.kongye.ledger"
         minSdk = 26
         targetSdk = 36
-        versionCode = 40
-        versionName = "1.0.1"
+        versionCode = 46
+        versionName = "1.0.7"
         testInstrumentationRunner = "com.kongye.ledger.LedgerTests"
     }
     buildTypes {
@@ -37,4 +37,5 @@ dependencies {
     implementation("androidx.work:work-runtime:2.9.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
 }

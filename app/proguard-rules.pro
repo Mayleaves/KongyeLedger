@@ -11,3 +11,9 @@
 -keep class com.kongye.ledger.ReviewWorker {
     public <init>(android.content.Context, androidx.work.WorkerParameters);
 }
+
+# ML Kit discovers these registrars by class name and calls their no-argument constructors.
+-keep class com.google.mlkit.** implements com.google.firebase.components.ComponentRegistrar {
+    public <init>();
+    public java.util.List getComponents();
+}

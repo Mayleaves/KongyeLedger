@@ -1,0 +1,4 @@
+<resources>
+    <string name="payment_screen_name">#空叶记账</string>
+    <string name="payment_screen_description">在支持的支付应用前台，读取屏幕文字并在本机识别付款结果和微信支付卡片，生成账目。图片仅在内存中处理。可在空叶记账中暂停，也可在系统设置关闭此服务。</string>
+</resources>

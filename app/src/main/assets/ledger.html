@@ -307,6 +307,25 @@ button.sw{border:0;padding:0}
 .mask{position:absolute;inset:0;background:rgba(32,28,24,.36);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:65;display:flex;align-items:flex-end}
 .sheet{width:100%;max-height:89%;background:var(--canvas);border-radius:30px 30px 0 0;padding:12px var(--page-gutter) 24px;position:relative;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 -14px 38px rgba(30,24,18,.15)}
 .sheet::before{content:"";display:block;width:38px;height:4px;border-radius:99px;background:rgba(130,115,95,.22);margin:0 auto 14px}
+.screen-setting{padding:16px;margin-bottom:12px}
+.screen-setting-top{display:flex;align-items:center;gap:12px}
+.screen-setting-copy{min-width:0;flex:1}
+.screen-setting-copy b{display:block;font-size:1rem}
+.screen-setting-copy small{display:block;color:var(--muted);font-size:.8125rem;line-height:1.55;margin-top:4px}
+.screen-setting .sw{flex:none}
+.screen-setting-help{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:14px;padding:12px 0 0;border:0;border-top:1px solid var(--div);background:none;color:var(--ink2);font:inherit;font-size:.8125rem;text-align:left;cursor:pointer}
+.screen-consent .backup-heading{margin-bottom:16px}
+.screen-consent-intro{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.screen-consent-intro .action-icon{width:52px;height:52px;flex:none}
+.screen-consent-intro b{display:block;font-size:1.0625rem}
+.screen-consent-intro p{font-size:.8125rem;line-height:1.6;color:var(--muted);margin-top:4px}
+.screen-consent-list{display:grid;gap:0;padding:4px 16px;border-radius:22px;background:var(--card,#fff);list-style:none}
+.screen-consent-list li{display:flex;align-items:flex-start;gap:12px;padding:13px 0;font-size:.84375rem;line-height:1.6;color:var(--ink2)}
+.screen-consent-list li+li{border-top:1px solid var(--div)}
+.screen-consent-list i{font-style:normal;color:var(--cta);font-weight:700;flex:none;width:18px}
+.screen-consent-next{margin:16px 2px;color:var(--muted);font-size:.8125rem;line-height:1.75}
+.screen-consent-next b{color:var(--ink2)}
+.screen-consent-actions{display:grid;grid-template-columns:1fr 1.6fr;gap:12px}
 .sheet.add-sheet{padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:94%}
 @media(min-width:390px){.sheet.add-sheet{padding-inline:18px}}
 .cta-btn{font:inherit;width:100%;min-height:46px;border-radius:99px;border:0;background:var(--cta);color:#fff;font-size:0.9062rem;font-weight:700;box-shadow:var(--cta-sh);cursor:pointer;transition:transform .14s,opacity .15s}
@@ -815,7 +834,7 @@ const arg=v=>esc(JSON.stringify(v));
 const DEF = {
   tab:'home', calSub:'cal', statsSub:'overview',
   firstMetDate:TODAY, budgetLimits:{day:0,week:0,month:300000,quarter:0,year:0}, budgetSpent:{}, autoGuard:true,
-  channels:{wechat:true,alipay:true,sms:true,unionpay:false,douyin:true,xianyu:true,alibaba:true},
+  channels:{wechat:true,alipay:true,sms:true,unionpay:false,douyin:true,xianyu:true,alibaba:true,meituan:true},
   q:'', datePreset:'all', dateFrom:MONTH+'-01', dateTo:TODAY, dirFilter:'全部', catFilter:'全部种类',
   calMonth:MONTH, selDay:TDAY, trendSeries:['out','inc','net'], trendPeriod:'day', trendSelected:null,
   trendFrom:MONTH+'-01', trendTo:TODAY, trendCategories:{'收入':[],'支出':[]}, postedOnly:false, donutMode:'支出', worthMood:'happy',
@@ -1900,7 +1919,7 @@ function renderAutoAndMine(){
   </div>`;
 }
 
-const bundledRelease={tag:'v1.0.1',title:'空叶记账 v1.0.1',notes:'- 增加抖音、闲鱼和阿里巴巴 1688 的付款通知识别。\n- 支持补查仍留在通知栏里的今日付款通知。'};
+const bundledRelease={tag:'v1.0.7',title:'空叶记账 v1.0.7',notes:'- 整理屏幕识别说明弹窗，暂停操作改为开关。\n- 补充美团极速支付、支付宝自动扣款和微信账单详情识别。\n- 支付页面未触发变化事件时，定时检查前台支付应用。'};
 let githubCatalog=null, updateBusy=false, updateError='';
 const versionLabel=version=>version?'v'+version.replace(/^v/,''):'未知版本';
 function openUpdateSheet(tab,refresh=false){
@@ -2007,7 +2026,7 @@ function renderUpdateBody(){
 const LISTENING_CHANNELS=[
   ['wechat','微信支付通知'],['alipay','支付宝通知'],
   ['sms','银行动账短信'],['unionpay','云闪付通知'],
-  ['douyin','抖音付款通知'],['xianyu','闲鱼付款通知'],['alibaba','阿里巴巴 1688 付款通知']
+  ['douyin','抖音付款通知'],['xianyu','闲鱼付款通知'],['alibaba','阿里巴巴 1688 付款通知'],['meituan','美团付款通知']
 ];
 let listenerReconnecting=false;
 function setListenerReconnect(active){listenerReconnecting=active;if(S.tab==='auto')render();}
@@ -2037,6 +2056,15 @@ function renderListeningSettings(){
   return `<div class="mine-page">
     <section aria-labelledby="mine-channels-title">
       <div class="mine-heading"><h2 id="mine-channels-title">监听渠道</h2></div>
+      <div class="card screen-setting">
+        <div class="screen-setting-top">
+          <span class="action-icon" aria-hidden="true">${ico('search',22)}</span>
+          <div class="screen-setting-copy"><b>屏幕识别</b><small role="status">${({active:'已连接 · 识别后进入待确认',off:'已暂停 · 开启后识别付款结果',permission:'待授权 · 需开启无障碍权限',disconnected:'未连接 · 请检查无障碍权限',unsupported:'需要 Android 11 或以上版本'}[S.screenRecognition]||'识别支付应用中的付款结果')}</small></div>
+          <button type="button" class="sw ${S.screenRecognition==='active'?'':'off'}" role="switch" aria-checked="${S.screenRecognition==='active'}" aria-label="屏幕识别开关" ${S.screenRecognition==='unsupported'?'disabled':''} onclick="Ledger.configure('${S.screenRecognition==='active'?'screen-pause':'screen-recognition'}')"></button>
+        </div>
+        <button type="button" class="screen-setting-help" onclick="Ledger.configure('screen-recognition')"><span>识别说明与权限设置</span>${ico('chevronRight',16)}</button>
+        ${S.screenRecognitionError?`<p class="mine-auto-meta" role="status">${esc(S.screenRecognitionError)}</p>`:''}
+      </div>
       ${renderListenerRecovery()}
       <div class="card mine-group">${LISTENING_CHANNELS.map(renderListeningChannel).join('')}</div>
       ${notificationListeningState()==='active'?`<div class="card mine-group" style="margin-top:10px">
@@ -2121,6 +2149,17 @@ function onBannerClick(){ document.getElementById('os-banner').classList.remove(
 
 /* ==================== 模态抽屉：陪伴纪念卡 / 备份中心 / 记一笔 / 详情确认 / 预算 ==================== */
 function closeSheet(){ document.getElementById('sheet-root').innerHTML=''; editCategory=null; trendPeriodDraft=null; }
+
+function openScreenRecognitionSheet(){
+  const active=S.screenRecognition==='active';
+  document.getElementById('sheet-root').innerHTML=`<div class="mask" onclick="if(event.target===this)closeSheet()"><section class="sheet screen-consent" role="dialog" aria-modal="true" aria-labelledby="screen-consent-title">
+    <div class="backup-heading"><h3 id="screen-consent-title">屏幕识别</h3><button class="ibtn" aria-label="关闭屏幕识别说明" onclick="closeSheet()">×</button></div>
+    <div class="screen-consent-intro"><span class="action-icon" aria-hidden="true">${ico('search',26)}</span><div><b>${active?'正在帮你留意付款结果':'付款后，帮你整理账目'}</b><p>补充识别应用内的付款结果和微信支付卡片</p></div></div>
+    <ul class="screen-consent-list"><li><i>01</i><span>仅在支持的支付应用前台读取屏幕，识别明确的付款结果。</span></li><li><i>02</i><span>识别在本机完成，屏幕图片仅在内存中处理，不保存图片。</span></li><li><i>03</i><span>识别出的账目放入<b>待确认</b>，由你核对后入账。</span></li></ul>
+    <p class="screen-consent-next">${active?'可随时通过页面上的开关暂停识别。':'下一步：在系统无障碍设置中，手动开启 <b>#空叶记账</b>。'}</p>
+    <div class="screen-consent-actions"><button class="cta-btn ghost" onclick="closeSheet()">${active?'关闭':'暂不开启'}</button><button class="cta-btn" onclick="closeSheet();Ledger.configure('screen-enable')">${active?'查看系统权限':'去开启'}</button></div>
+  </section></div>`;
+}
 
 function openCompanionDate(){
   pickDate(S.firstMetDate,'与噗噗初遇日期',date=>{

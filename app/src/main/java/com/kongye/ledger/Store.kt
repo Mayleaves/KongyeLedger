@@ -80,6 +80,10 @@ class Store private constructor(val ctx:Context) {
  @Synchronized fun ingest(source:String,sender:String,title:String,body:String,time:Long,key:String="",
      text:String=body,bigText:String="",subText:String="",simSlot:Int=-1):Txn? {
   val data = listOf(source,sender,if(source=="sms" || key.isBlank()) time.toString() else key,title,body,text,bigText,subText)
+  if(source=="screen") {
+   val existing = rows("RawEvent").firstOrNull { it.optString("source")=="screen" && it.optString("key")==key }
+   if(existing!=null)return null
+  }
   val hash=MessageDigest.getInstance("SHA-256").digest(JSONArray(data).toString().toByteArray()).joinToString(""){"%02x".format(it)}
   val id="raw:$hash"
   if(db.records().find(id)!=null)return null
@@ -93,7 +97,7 @@ class Store private constructor(val ctx:Context) {
  }
 
  private fun process(raw:JSONObject,remind:Boolean):Txn? {
-  val result=parser().parse(raw)
+  val result=if(raw.optString("source")=="screen") ScreenPaymentParser.transaction(raw) else parser().parse(raw)
   val id=raw.getString("id")
   fun record(status:String,reason:String) {
    raw.put("parserVersion",setting("parserVersion","2").toIntOrNull()?:2)

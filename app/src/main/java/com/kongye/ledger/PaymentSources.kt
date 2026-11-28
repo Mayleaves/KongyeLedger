@@ -6,13 +6,15 @@ internal val paymentNotificationChannels = mapOf(
     "unionpay" to "com.unionpay",
     "douyin" to "com.ss.android.ugc.aweme",
     "xianyu" to "com.taobao.idlefish",
-    "alibaba" to "com.alibaba.wireless"
+    "alibaba" to "com.alibaba.wireless",
+    "meituan" to "com.sankuai.meituan"
 )
 
 internal val shoppingPaymentApps = mapOf(
     paymentNotificationChannels.getValue("douyin") to "抖音",
     paymentNotificationChannels.getValue("xianyu") to "闲鱼",
-    paymentNotificationChannels.getValue("alibaba") to "阿里巴巴"
+    paymentNotificationChannels.getValue("alibaba") to "阿里巴巴",
+    paymentNotificationChannels.getValue("meituan") to "美团"
 )
 
 private val completedOrderPayment = Regex(

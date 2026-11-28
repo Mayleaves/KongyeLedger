@@ -23,13 +23,44 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 class LedgerTests:Instrumentation(){
  private var mode: String? = null
+ private var screenPackage: String? = null
+ private var expectedCents: Long = 0
+ private var screenshotNow: Long? = null
+ private var screenshotZone: String? = null
  override fun onCreate(arguments:Bundle?){
   super.onCreate(arguments)
   mode = arguments?.getString("mode")
+  screenPackage = arguments?.getString("screenPackage")
+  expectedCents = arguments?.getString("expectedCents")?.toLongOrNull() ?: 0
+  screenshotNow = arguments?.getString("now")?.toLongOrNull()
+  screenshotZone = arguments?.getString("timezone")
   start()
  }
  override fun onStart(){val result=Bundle();try{
  require(targetContext.packageName.endsWith(".qa")) { "Tests must use the isolated QA package" }
+ if (mode == "screen-image") {
+  val previousZone = java.util.TimeZone.getDefault()
+  screenshotZone?.let { java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(it)) }
+  val directory = targetContext.getExternalFilesDir(null)
+  val bitmap = android.graphics.BitmapFactory.decodeFile(java.io.File(directory,"screen-fixture.png").absolutePath)
+   ?: error("Missing screenshot fixture")
+  val recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(
+   com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
+  try {
+   val text = com.google.android.gms.tasks.Tasks.await(recognizer.process(
+    com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap,0)),30,java.util.concurrent.TimeUnit.SECONDS)
+   val lines = text.textBlocks.flatMap { it.lines }
+    .sortedWith(compareBy({it.boundingBox?.top ?: 0},{it.boundingBox?.left ?: 0})).joinToString("\n") { it.text }
+   java.io.File(directory,"screen-ocr.txt").writeText(lines)
+   val payment = ScreenPaymentParser.parse(requireNotNull(screenPackage),lines,screenshotNow ?: System.currentTimeMillis())
+    ?: error("Screenshot payment not recognized")
+   check(payment.cents == expectedCents) { "Screenshot payment amount mismatch" }
+   java.io.File(directory,"screen-result.json").writeText(payment.json().toString())
+   result.putString("stream", "PASS: captured screenshot recognized with the expected payment amount")
+  } finally { recognizer.close(); bitmap.recycle(); java.util.TimeZone.setDefault(previousZone) }
+  finish(RESULT_OK,result)
+  return
+ }
  if (mode == "listener") {
   verifyNotificationListener()
   result.putString("stream", "PASS: Android notification listener reconnected, received a notification and saved it automatically")
@@ -39,6 +70,12 @@ class LedgerTests:Instrumentation(){
  if (mode == "shopping-payments") {
   verifyShoppingPayments()
   result.putString("stream", "PASS: shopping channels, amount and merchant extraction, duplicate filtering and unpaid notice rejection")
+  finish(RESULT_OK, result)
+  return
+ }
+ if (mode == "screen-payments" || mode == "screen-ocr") {
+  verifyScreenPayments(mode == "screen-ocr")
+  result.putString("stream", "PASS: local screen recognition, amount and time, pending review, repeated screens and notification deduplication")
   finish(RESULT_OK, result)
   return
  }
@@ -351,6 +388,72 @@ class LedgerTests:Instrumentation(){
   }
  }
 
+ private fun verifyScreenPayments(ocr: Boolean) {
+  val store = Store.get(targetContext)
+  store.db.clearAllTables()
+  val today = LocalDate.now()
+  val now = today.atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+  val pkg = "com.tencent.mm"
+  val card = "微信支付\n10:21\n微信支付有优惠\n优惠额度\n166元\n10:26\n美团\n使用零钱支付\n￥34.40\n交易详情\n我的账单"
+  val payment = ScreenPaymentParser.parse(pkg, card, now) ?: error("Card not recognized")
+  check(payment.cents == 3440L && payment.merchant == "美团")
+  check(ScreenPaymentParser.parse(pkg, card.replace("￥34.40","34.40").replace("美团","美团美团"), now)?.cents == 3440L)
+  check(payment.time == today.atTime(10,26).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+  check(ScreenPaymentParser.parse(pkg, "微信支付\n美团\n使用零钱支付\n￥34.40", now) == null)
+  check(ScreenPaymentParser.parse(pkg, "微信支付\n昨天\n10:26\n美团\n使用零钱支付\n￥34.40", now) == null)
+  check(ScreenPaymentParser.parse(pkg, card + "\n支付成功\n￥10.00", now) == null)
+  check(ScreenPaymentParser.parse("com.example.chat", card, now) == null)
+  val result = ScreenPaymentParser.parse(pkg, "支付成功\n￥12.34\n商户\n测试咖啡", now) ?: error("Payment result not recognized")
+  check(result.merchant == "测试咖啡" && result.cents == 1234L)
+  val alipay = "com.eg.android.AlipayGphone"
+  val meituan = "com.sankuai.meituan"
+  val checkout = ScreenPaymentParser.parse(alipay, "美团\n-34.40\n交易成功\n付款方式\n余额宝\n交易时间\n" +
+   today.toString() + " 10:26:18\n订单号\n12345678901234", now) ?: error("Alipay detail not recognized")
+  check(checkout.merchant == "美团" && checkout.cents == 3440L)
+  check(checkout.time == today.atTime(10,26,18).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+  check(ScreenPaymentParser.parse(alipay, "付款成功\n12.3\n收款商户\n测试咖啡店", now)?.cents == 1230L)
+  val autoDebit = ScreenPaymentParser.parse(alipay,
+   "账单详情\n测试代付\n-22.80\n自动扣款成功\n管理自动扣款\n自动扣款 免密支付\n支付时间\n${today} 10:17:53\n付款方式\n建设银行储蓄卡(0000)\n支付奖励\n立即领取15积分", now)!!
+  check(autoDebit.cents == 2280L && autoDebit.merchant == "测试代付")
+  check(autoDebit.time == today.atTime(10,17,53).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+  check(ScreenPaymentParser.parse(meituan, "支付成功\n实付金额\n￥23.50\n商家\n测试面馆", now)?.merchant == "测试面馆")
+  check(ScreenPaymentParser.parse(meituan, "美团支付\n支付成功\n¥12.34", now)?.merchant == "美团")
+  val meituanDetail = ScreenPaymentParser.parse(meituan,
+   "账单详情\n测试面馆\n-64.95\n极速支付成功\n1笔返利待领取\n支付方式\n中国建设银行储蓄卡(0000)\n下单时间\n${LocalDate.now()} 10:26:18\n下单平台\n美团App\n消费场景\n外卖", now)!!
+  check(meituanDetail.cents == 6495L && meituanDetail.merchant == "测试面馆")
+  check(ScreenPaymentParser.parse(meituan,"测试面馆\n-64.95\n板逮支付成功", now)?.cents == 6495L)
+  check(ScreenPaymentParser.parse(meituan,"测试面馆\n-64.95\n未支付成功", now) == null)
+  check(ScreenPaymentParser.parse(meituan,"测试面馆\n-64.95\n支付成功后可领取", now) == null)
+  val wechatDetail = ScreenPaymentParser.parse(pkg,
+   "16688电商平台\n-9.77\n当前状态\n支付成功\n${today} 09:57:55\n支付时间\n商户全称\n测试网络科技有限公司", now)!!
+  check(wechatDetail.merchant == "16688电商平台" && wechatDetail.cents == 977L)
+  check(wechatDetail.time == today.atTime(9,57,55).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+  check(java.time.Instant.ofEpochMilli(meituanDetail.time).atZone(java.time.ZoneId.systemDefault()).toLocalTime().toString() == "10:26:18")
+  check(ScreenPaymentParser.parse(meituan, "待付款\n实付金额 ￥23.50\n商家 测试面馆", now) == null)
+  check(ScreenPaymentParser.parse(alipay, "退款成功\n¥12.34\n商户\n测试店", now) == null)
+  check(ScreenPaymentParser.parse(alipay, "交易成功\n￥12.34\n￥18.90\n商户\n测试店", now) == null)
+  check(ScreenPaymentParser.parse(alipay, "交易成功\n￥12.34\n商户\n测试店\n交易时间\n昨天10:26", now) == null)
+  val key = "screen-fixture"
+  val item = store.ingest("screen", pkg, "屏幕识别", payment.json().toString(), payment.time, key)!!
+  check(item.status == "待确认" && item.cents == 3440L)
+  check(store.ingest("screen", pkg, "屏幕识别", payment.json().put("time",payment.time+1000).toString(), payment.time+1000,key) == null)
+  store.ingest("notification",pkg,"微信支付","向美团支付34.40元",payment.time+1000,"fixture-wx")
+  check(store.txns().size == 1 && store.txns().single().events.size == 2)
+  if (ocr) {
+   val file=java.io.File(targetContext.getExternalFilesDir(null),"screen-fixture.png")
+   val bitmap=android.graphics.BitmapFactory.decodeFile(file.absolutePath) ?: error("Missing screenshot fixture")
+   val recognizer=com.google.mlkit.vision.text.TextRecognition.getClient(
+    com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions.Builder().build())
+   try {
+    val text=com.google.android.gms.tasks.Tasks.await(recognizer.process(
+     com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap,0)),30,java.util.concurrent.TimeUnit.SECONDS)
+    val lines=text.textBlocks.flatMap{it.lines}.sortedWith(compareBy({it.boundingBox?.top?:0},{it.boundingBox?.left?:0})).joinToString("\n"){it.text}
+    val found=ScreenPaymentParser.parse(pkg,lines,now) ?: error("Payment card could not be recognized from screenshot")
+    check(found.cents==3440L && found.merchant=="美团")
+   }finally{recognizer.close();bitmap.recycle()}
+  }
+ }
+
  private fun verifyShoppingPayments() {
   val context = targetContext
   val store = Store.get(context)
@@ -388,11 +491,13 @@ class LedgerTests:Instrumentation(){
   )
   check(ignored.none { capturePaymentNotification(store, it) })
   check(store.rows("RawEvent").size == 5) { "Shopping promos and routine notifications must not be stored" }
+  check(capturePaymentNotification(store, notice("meituan", 12, "支付成功", "商家：测试面馆，实付 ￥26.80")))
+  check(store.txns().single { it.cents == 2680L }.category == "餐饮")
   store.set("channel:" + paymentNotificationChannels.getValue("douyin"), "false")
   check(!capturePaymentNotification(store, notice("douyin", 9, "付款成功", "付款金额 ￥11.20")))
   store.set("autoGuard", "false")
   check(!capturePaymentNotification(store, notice("alibaba", 10, "付款成功", "付款金额 ￥13.20")))
-  check(store.txns().size == 3)
+  check(store.txns().size == 4)
  }
 
  private fun verifyNotificationListener() {

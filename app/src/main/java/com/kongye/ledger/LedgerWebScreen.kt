@@ -395,6 +395,26 @@ internal fun LedgerWebScreen(
                     "notification" -> openNotificationSettings()
                     "notification-retry" -> retryNotificationListener()
                     "notification-check-today" -> checkTodaysNotifications()
+                    "screen-recognition" -> {
+                        if (Build.VERSION.SDK_INT < 30) {
+                            result("屏幕识别需要 Android 11 或以上版本。")
+                        } else {
+                            script("openScreenRecognitionSheet();")
+                        }
+                    }
+                    "screen-enable" -> {
+                        if (Build.VERSION.SDK_INT < 30) {
+                            result("屏幕识别需要 Android 11 或以上版本。")
+                        } else {
+                            store.set("screenRecognition", "true")
+                            store.set("screenRecognitionError", "")
+                            openSettings(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), "无法打开无障碍设置，请在系统设置搜索「无障碍」。")
+                        }
+                    }
+                    "screen-pause" -> {
+                        store.set("screenRecognition", "false")
+                        result("屏幕识别已暂停。")
+                    }
                     "sms" -> requestSmsAccess()
                     "reminders" -> requestReminderAccess()
                     "battery" -> openSettings(
@@ -563,7 +583,7 @@ private class LedgerWebBridge(
     @JavascriptInterface fun startupFailed() = launch("startup-error")
 
     @JavascriptInterface fun configure(action: String) {
-        if (action in listOf("notification", "notification-retry", "notification-check-today", "sms", "reminders", "battery")) launch(action)
+        if (action in listOf("notification", "notification-retry", "notification-check-today", "screen-recognition", "screen-enable", "screen-pause", "sms", "reminders", "battery")) launch(action)
     }
     @JavascriptInterface fun importFile(format: String) {
         if (format in listOf("json", "csv", "bills")) launch("import-$format")
@@ -658,6 +678,8 @@ private class LedgerWebBridge(
             .put("autoGuard", autoGuard)
             .put("listening", statuses.keys().asSequence().any { statuses.getString(it) == "active" })
             .put("channelStatuses", statuses)
+            .put("screenRecognition", screenRecognitionStatus(store.ctx))
+            .put("screenRecognitionError", store.setting("screenRecognitionError"))
             .put("permissions", JSONObject()
                 .put("notification", hasNotificationAccess)
                 .put("sms", smsStatus)

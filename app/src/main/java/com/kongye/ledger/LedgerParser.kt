@@ -104,7 +104,8 @@ internal class LedgerParser(text: String) {
         val account = tailPattern.find(text)?.groupValues?.get(1).orEmpty()
         val serial = serialPattern.find(text)?.groupValues?.get(1).orEmpty()
         return ParseResult(
-            Txn(cents = matches.single(), merchant = merchant, category = if (shoppingApp != null) "购物" else "其他", direction = direction,
+            Txn(cents = matches.single(), merchant = merchant,
+                category = when (shoppingApp) { "美团" -> "餐饮"; null -> "其他"; else -> "购物" }, direction = direction,
                 time = timestamp, account = account, serial = serial, source = "自动",
                 events = mutableListOf(raw.getString("id"))),
             if (merchantUnknown) "缺少商户" else "识别完成",
