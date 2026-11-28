@@ -2,7 +2,7 @@
 
 一款 Android 个人记账应用，支持手动记账、识别支付通知和银行短信，以及导入账单。你可以按日历查流水、设定预算，并查看收支趋势和分类构成。
 
-[下载 APK](https://github.com/Mayleaves/KongyeLedger/releases/download/v1.0.7/KongyeLedger-v1.0.7.apk) · [更新日志](https://github.com/Mayleaves/KongyeLedger/releases)
+[下载 APK](https://github.com/Mayleaves/KongyeLedger/releases/download/v1.0.8/KongyeLedger-v1.0.8.apk) · [更新日志](https://github.com/Mayleaves/KongyeLedger/releases)
 
 ## 主要功能
 
@@ -12,6 +12,7 @@
 - **流水与统计**　在印章日历中查看每日账单，按日期、分类等条件筛选流水。在「洞察」查看收支趋势和分类构成。
 - **预算**　支持按日、周、月、季或年设置预算，并在首页查看今日可用额度。
 - **备份与恢复**　支持本地 JSON 备份与恢复、CSV 导入导出，以及手动 WebDAV 备份与恢复。WebDAV 备份存入服务器上的 `KongyeLedger` 文件夹。
+- **版本更新**　在应用内检查、下载安装包，查看真实下载进度，校验文件和签名后交由系统安装。更新历史保留 GitHub 发布说明和链接。
 
 ## 安装与构建
 

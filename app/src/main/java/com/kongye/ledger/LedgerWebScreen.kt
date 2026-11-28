@@ -128,9 +128,81 @@ internal fun LedgerWebScreen(
     val installedVersion = remember(activity) {
         activity.packageManager.getPackageInfo(activity.packageName, 0).versionName.orEmpty()
     }
+    var updateDownload by remember { mutableStateOf(JSONObject().put("status", "idle")) }
+    var downloadedUpdate by remember { mutableStateOf<java.io.File?>(null) }
+    var updateJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    var updateGeneration by remember { mutableIntStateOf(0) }
+    val apkDownload = remember(activity) { LedgerApkDownload(activity.applicationContext) }
+    DisposableEffect(apkDownload) { onDispose { apkDownload.cancel() } }
 
     fun script(code: String) { web?.evaluateJavascript(code, null) }
     fun result(message: String) = script("syncLedger(); toast(${JSONObject.quote(message)});")
+    fun updateDownloadState(state: JSONObject) {
+        updateDownload = state
+        script("setUpdateDownloadState(${JSONObject.quote(state.toString())});")
+    }
+    val installPermission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val file = downloadedUpdate
+        if (activity.packageManager.canRequestPackageInstalls() && file != null) {
+            runCatching { activity.startActivity(ledgerUpdateInstallIntent(activity, file)) }
+                .onFailure { result("无法打开安装器，请点击安装重试。") }
+        } else {
+            result("未获得安装权限，安装包已保存在本机，可点击安装重试。")
+        }
+    }
+    fun installDownloadedUpdate() {
+        val file = downloadedUpdate ?: run { result("请先下载安装包。"); return }
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { verifyLedgerUpdateApk(activity, file) }
+                if (!activity.packageManager.canRequestPackageInstalls()) {
+                    result("请允许空叶记账安装应用，返回后继续安装。")
+                    installPermission.launch(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.fromParts("package", activity.packageName, null)))
+                } else activity.startActivity(ledgerUpdateInstallIntent(activity, file))
+            } catch (error: CancellationException) { throw error }
+            catch (error: LedgerUpdateException) { result(error.message ?: "安装包校验失败，请重新下载。") }
+            catch (_: Exception) { result("无法打开安装器，请稍后重试。") }
+        }
+    }
+    fun downloadUpdate(tag: String) {
+        if (updateJob != null) return
+        if (LedgerUpdates.githubUrl("apk", tag) == null) { result("版本号无效。"); return }
+        val generation = ++updateGeneration
+        downloadedUpdate = null
+        updateDownloadState(JSONObject().put("status", "connecting").put("tag", tag))
+        updateJob = scope.launch {
+            try {
+                val file = withContext(Dispatchers.IO) {
+                    val asset = LedgerUpdates().apk(tag)
+                    val apk = apkDownload.download(asset) { received, total ->
+                        activity.runOnUiThread {
+                            if (generation == updateGeneration && updateJob?.isCancelled != true) updateDownloadState(JSONObject()
+                                .put("status", "downloading").put("tag", tag).put("received", received).put("total", total))
+                        }
+                    }
+                    activity.runOnUiThread {
+                        if (generation == updateGeneration && updateJob?.isCancelled != true) updateDownloadState(JSONObject().put("status", "verifying").put("tag", tag))
+                    }
+                    verifyLedgerUpdateApk(activity, apk)
+                    apk
+                }
+                if (generation == updateGeneration) {
+                    downloadedUpdate = file
+                    updateDownloadState(JSONObject().put("status", "ready").put("tag", tag))
+                }
+            } catch (error: CancellationException) { throw error }
+            catch (error: Exception) {
+                if (generation == updateGeneration) updateDownloadState(JSONObject().put("status", "error").put("tag", tag)
+                    .put("message", if (error is LedgerUpdateException || error is IllegalArgumentException) error.message else "下载失败，请检查网络后重试"))
+            } finally {
+                if (generation == updateGeneration) {
+                    if (updateJob?.isCancelled == true) updateDownloadState(JSONObject().put("status", "idle"))
+                    updateJob = null
+                }
+            }
+        }
+    }
     fun checkUpdates() {
         scope.launch {
             val payload = withContext(Dispatchers.IO) {
@@ -373,7 +445,20 @@ internal fun LedgerWebScreen(
                     openSettings(Intent(Intent.ACTION_VIEW, Uri.parse(url)), "无法打开 GitHub，请确认手机已安装浏览器。")
                 }
             }
-        }, onWebDav = { operation, address, user, password, reusePassword ->
+        }, onUpdate = { action, tag ->
+            activity.runOnUiThread {
+                if (attempt == pageAttempt && loaded && !loadFailed) when (action) {
+                    "download" -> downloadUpdate(tag)
+                    "install" -> installDownloadedUpdate()
+                    "cancel" -> {
+                        apkDownload.cancel()
+                        updateJob?.cancel()
+                        updateDownloadState(JSONObject().put("status", if (updateJob == null) "idle" else "cancelling")
+                            .put("tag", updateDownload.optString("tag")))
+                    }
+                }
+            }
+        }, updateStatus = { updateDownload.toString() }, onWebDav = { operation, address, user, password, reusePassword ->
             activity.runOnUiThread {
                 if (attempt == pageAttempt && loaded && !loadFailed) runWebDav(operation, address, user, password, reusePassword)
             }
@@ -576,6 +661,8 @@ private class LedgerWebBridge(
     private val davSettings: LedgerDavSettings,
     private val installedVersion: String,
     private val onGitHub: (String) -> Unit,
+    private val onUpdate: (String, String) -> Unit,
+    private val updateStatus: () -> String,
     private val onWebDav: (String, String, String, String, Boolean) -> Unit,
     private val launch: (String) -> Unit
 ) {
@@ -593,6 +680,10 @@ private class LedgerWebBridge(
     }
     @JavascriptInterface fun newId(): String = UUID.randomUUID().toString()
     @JavascriptInterface fun appVersion(): String = installedVersion
+    @JavascriptInterface fun downloadUpdate(tag: String) { if (LedgerUpdates.githubUrl("apk", tag) != null) onUpdate("download", tag) }
+    @JavascriptInterface fun installUpdate() = onUpdate("install", "")
+    @JavascriptInterface fun cancelUpdate() = onUpdate("cancel", "")
+    @JavascriptInterface fun updateDownloadStatus(): String = updateStatus()
     @JavascriptInterface fun checkUpdates() = launch("check-updates")
     @JavascriptInterface fun addManualCategory(direction: String, name: String): String = runCatching {
         JSONObject().put("name", store.addManualCategory(direction, name))
@@ -614,7 +705,7 @@ private class LedgerWebBridge(
     }.toString()
 
     @JavascriptInterface fun openGitHub(page: String, tag: String) {
-        LedgerUpdates.githubUrl(page, tag)?.let(onGitHub)
+        if (page == "apk") downloadUpdate(tag) else LedgerUpdates.githubUrl(page, tag)?.let(onGitHub)
     }
 
     @JavascriptInterface fun webDavConfig(): String = davSettings.publicConfig().toString()

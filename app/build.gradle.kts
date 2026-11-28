@@ -9,9 +9,14 @@ android {
         applicationId = "com.kongye.ledger"
         minSdk = 26
         targetSdk = 36
-        versionCode = 46
-        versionName = "1.0.7"
+        versionCode = 47
+        versionName = "1.0.8"
         testInstrumentationRunner = "com.kongye.ledger.LedgerTests"
+    }
+    signingConfigs.getByName("debug") {
+        enableV1Signing = true
+        enableV2Signing = true
+        enableV3Signing = true
     }
     buildTypes {
         debug { applicationIdSuffix = ".qa" }

@@ -10,6 +10,28 @@ import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 internal class LedgerUpdates(private val client: OkHttpClient = transport) {
+    fun apk(tag: String): LedgerApkAsset {
+        val url = githubUrl("apk", tag) ?: throw LedgerUpdateException("版本号无效")
+        val request = Request.Builder().url("https://api.github.com/repos/$REPOSITORY/releases/tags/$tag")
+            .header("Accept", "application/vnd.github+json").header("User-Agent", "KongyeLedger").build()
+        val release = client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw LedgerUpdateException("无法获取安装包，请稍后重试")
+            val source = response.body?.source() ?: throw LedgerUpdateException("未找到安装包")
+            if (source.request(2_097_153)) throw LedgerUpdateException("版本信息过大")
+            JSONObject(source.readUtf8())
+        }
+        if (release.optBoolean("draft") || release.optBoolean("prerelease") || release.optString("tag_name") != tag) {
+            throw LedgerUpdateException("此版本尚未正式发布")
+        }
+        val assets = release.optJSONArray("assets") ?: JSONArray()
+        val apk = (0 until assets.length()).mapNotNull { assets.optJSONObject(it) }.firstOrNull {
+            it.optString("state") == "uploaded" && it.optString("browser_download_url") == url
+        } ?: throw LedgerUpdateException("此版本没有可下载的安装包")
+        val hash = apk.optString("digest").removePrefix("sha256:")
+        if (!Regex("[a-fA-F0-9]{64}").matches(hash)) throw LedgerUpdateException("安装包缺少校验信息，请稍后重试")
+        return LedgerApkAsset(tag, url, apk.optLong("size"), hash)
+    }
+
     fun check(installedVersion: String): JSONObject {
         val request = Request.Builder().url("https://api.github.com/repos/$REPOSITORY/releases?per_page=50")
             .header("Accept", "application/vnd.github+json")

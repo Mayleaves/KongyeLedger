@@ -593,6 +593,11 @@ button.sw{border:0;padding:0}
 .dav-confirm p{margin-bottom:10px}
 .cta-btn:disabled{opacity:.45;cursor:default}
 .updates-body{display:grid;gap:11px;margin-top:14px}
+.update-download-card{margin-top:14px;padding:16px;border-radius:22px;background:#fff;border:1px solid var(--div)}
+.update-download-card>b{font-size:.9375rem}
+.update-download-card p{margin:6px 0 14px;font-size:.8125rem;color:var(--muted);line-height:1.6}
+.update-progress{height:8px;overflow:hidden;background:var(--track);border-radius:99px;margin-bottom:14px}
+.update-progress span{display:block;height:100%;background:var(--cta);border-radius:inherit;transition:width .18s ease}
 .update-summary{display:grid;gap:5px;padding:14px 16px;border-radius:18px;background:var(--track)}
 .update-summary b{font-size:0.9062rem}.update-summary p,.update-caption,.release-date{font-size:0.7188rem;color:var(--muted);line-height:1.5}
 .update-caption.error{color:#a83c34}
@@ -644,6 +649,7 @@ button.sw{border:0;padding:0}
       <circle cx="20" cy="20" r="12" fill="#ffe68a" stroke="#e0a838" stroke-width="1.4"/>
       <text x="20" y="25.5" text-anchor="middle" font-size="14.5" font-weight="800" fill="#7a4c10">¥</text>
     </symbol>
+    <path id="pig-left-hoof" class="p8-s6" d="M218,1244c38,2,80,4,118,6-12,36-30,68-46,68-10,0-16-12-19-24-8,12-18,18-27,14-14-8-24-36-26-64Z"/>
     <symbol id="v8-happy" viewBox="-20 285 940 1055">
       <g id="v8-happy-core">
         <!-- 原画小卷尾（根部无缝焊接至右侧臀部描边） -->
@@ -664,8 +670,8 @@ button.sw{border:0;padding:0}
         <!-- 严丝合缝贴合20px粉色手臂外沿切线的分趾小猪蹄（完全包覆粉色圆头端帽） + 原画双脚黑蹄 -->
         <path class="p8-s6" d="M133.1,832.3C121,825.3,105,816,96,822C89,827,91,839,98,849C85,845,76,850,77,861C78,871,89,879.2,106.4,896.6Q124,867,133.1,832.3Z"/>
         <path class="p8-s6" d="M766.9,832.3C779,825.3,795,816,804,822C811,827,809,839,802,849C815,845,824,850,823,861C822,871,811,879.2,793.6,896.6Q776,867,766.9,832.3Z"/>
-        <path id="happy-left-hoof" class="p8-s6" d="M218,1244c38,2,80,4,118,6-12,36-30,68-46,68-10,0-16-12-19-24-8,12-18,18-27,14-14-8-24-36-26-64Z"/>
-        <use href="#happy-left-hoof" transform="translate(900 0) scale(-1 1)"/>
+        <use href="#pig-left-hoof"/>
+        <use href="#pig-left-hoof" transform="translate(900 0) scale(-1 1)"/>
         <!-- pig_2-02 弯弯月牙笑眼 + 原画猪鼻与斜鼻孔 -->
         <path d="M272,754C290,718,338,718,356,754M544,754C562,718,610,718,628,754" fill="none" stroke="#371912" stroke-width="22" stroke-linecap="round"/>
         <path class="p8-s2" d="M450,722c60,0,98,34,98,74s-30,62-64,60c-18-2-26-8-34-8s-16,6-34,8c-34,2-64-22-64-60,0-40,38-74,98-74Z"/>
@@ -685,7 +691,9 @@ button.sw{border:0;padding:0}
       <ellipse class="p8-s4" cx="268" cy="838" rx="68" ry="65"/><ellipse class="p8-s4" cx="632" cy="838" rx="68" ry="65"/>
       <path class="p8-s3" d="M302,522c64-24,232-24,296,0"/>
       <path class="p8-s1" d="M302,522c-22-36-62-40-106-20-48,22-94,52-108,76,10,44,50,86,118,96,28-44,52-90,68-138M598,522c22-36,62-40,106-20,48,22,94,52,108,76-10,44-50,86-118,96-28-44-52-90-68-138M186,672c-30,44-40,94-32,144,4,24,10,40,16,52-32,38-58,86-74,140M144,1048l24-24c-18,70-2,154,66,232M322,1258l16-22c62,4,162,4,224,0l16,22M666,1256c68-78,84-162,66-232l24,24M804,1008c-16-54-42-102-74-140,6-12,12-28,16-52,8-50-4-100-32-144"/>
-      <path class="p8-s6" d="M88,990c26,14,50,34,70,56-13,20-26,38-38,36-8-2-12-14-14-28-10,8-22,8-26-2-4-14,0-40,8-62ZM812,990c-26,14-50,34-70,56,13,20,26,38,38,36,8-2,12-14,14-28,10,8,22,8,26-2,4-14,0-40-8-62ZM218,1244c38,2,80,4,118,6-12,36-30,68-46,68-10,0-16-12-19-24-8,12-18,18-27,14-14-8-24-36-26-64ZM682,1244c-38,2-80,4-118,6,12,36,30,68,46,68,10,0,16-12-19-24,8,12,18,18,27,14-14-8,24-36,26-64Z"/>
+      <path class="p8-s6" d="M88,990c26,14,50,34,70,56-13,20-26,38-38,36-8-2-12-14-14-28-10,8-22,8-26-2-4-14,0-40,8-62ZM812,990c-26,14-50,34-70,56,13,20,26,38,38,36,8-2,12-14,14-28,10,8,22,8,26-2,4-14,0-40-8-62Z"/>
+      <use href="#pig-left-hoof"/>
+      <use href="#pig-left-hoof" transform="translate(900 0) scale(-1 1)"/>
       <circle class="p8-s6" cx="314" cy="746" r="29"/><circle class="p8-s6" cx="586" cy="746" r="29"/>
       <path class="p8-s2" d="M450,722c60,0,98,34,98,74s-30,62-64,60c-18-2-26-8-34-8s-16,6-34,8c-34,2-64-22-64-60,0-40,38-74,98-74Z"/>
       <ellipse class="p8-s8" cx="412" cy="795" rx="20" ry="12" transform="translate(-471.4 941.17) rotate(-72)"/>
@@ -700,7 +708,9 @@ button.sw{border:0;padding:0}
       <ellipse class="p8-s4" cx="268" cy="838" rx="68" ry="65"/><ellipse class="p8-s4" cx="632" cy="838" rx="68" ry="65"/>
       <path class="p8-s3" d="M302,522c64-24,232-24,296,0"/>
       <path class="p8-s1" d="M302,522c-22-36-62-40-106-20-48,22-94,52-108,76,10,44,50,86,118,96,28-44,52-90,68-138M598,522c22-36,62-40,106-20,48,22,94,52,108,76-10,44-50,86-118,96-28-44-52-90-68-138M186,672C156,716,146,766,154,816C158,840,164,856,170,868C188,898,214,915,244,920M170,868C144,894,146,938,170,962C190,978,216,982,242,980M170,962C152,1040,168,1132,234,1256M322,1258l16-22c62,4,162,4,224,0l16,22M666,1256C732,1132,748,1040,730,962M730,868C756,894,754,938,730,962C710,978,684,982,658,980M714,672C744,716,754,766,746,816C742,840,736,856,730,868C712,898,686,915,656,920"/>
-      <path class="p8-s6" d="M218,1244c38,2,80,4,118,6-12,36-30,68-46,68-10,0-16-12-19-24-8,12-18,18-27,14-14-8-24-36-26-64ZM682,1244c-38,2-80,4-118,6,12,36,30,68,46,68,10,0,16-12-19-24,8,12,18,18,27,14-14-8,24-36-26-64ZM237.7,908.8C258,911.8,299,921,301,938C303,949,290,956,276,954C289,962,290,977,277,985C265,991.5,250,990.2,234.8,990.6Q228,950,237.7,908.8ZM662.3,908.8C642,911.8,601,921,599,938C597,949,610,956,624,954C611,962,610,977,623,985C635,991.5,650,990.2,665.2,990.6Q672,950,662.3,908.8Z"/>
+      <path class="p8-s6" d="M237.7,908.8C258,911.8,299,921,301,938C303,949,290,956,276,954C289,962,290,977,277,985C265,991.5,250,990.2,234.8,990.6Q228,950,237.7,908.8ZM662.3,908.8C642,911.8,601,921,599,938C597,949,610,956,624,954C611,962,610,977,623,985C635,991.5,650,990.2,665.2,990.6Q672,950,662.3,908.8Z"/>
+      <use href="#pig-left-hoof"/>
+      <use href="#pig-left-hoof" transform="translate(900 0) scale(-1 1)"/>
       <circle class="p8-s6" cx="314" cy="746" r="30"/><path d="M288,761H340A30,30,0,0,1,288,761Z" fill="#7ac7eb"/><circle cx="305" cy="736" r="11.5" fill="#fff"/>
       <circle class="p8-s6" cx="586" cy="746" r="30"/><path d="M560,761H612A30,30,0,0,1,560,761Z" fill="#7ac7eb"/><circle cx="577" cy="736" r="11.5" fill="#fff"/>
       <path class="p8-s2" d="M450,722c60,0,98,34,98,74s-30,62-64,60c-18-2-26-8-34-8s-16,6-34,8c-34,2-64-22-64-60,0-40,38-74,98-74Z"/>
@@ -1919,8 +1929,8 @@ function renderAutoAndMine(){
   </div>`;
 }
 
-const bundledRelease={tag:'v1.0.7',title:'空叶记账 v1.0.7',notes:'- 整理屏幕识别说明弹窗，暂停操作改为开关。\n- 补充美团极速支付、支付宝自动扣款和微信账单详情识别。\n- 支付页面未触发变化事件时，定时检查前台支付应用。'};
-let githubCatalog=null, updateBusy=false, updateError='';
+const bundledRelease={tag:'v1.0.8',title:'空叶记账 v1.0.8',notes:'- 检查更新支持应用内下载、真实进度和本机安装，下载后校验完整性和签名。\n- 增加兼容签名格式，保留与旧版本相同的证书。\n- 修复中规中矩、抱抱后悔两种猪猪的脚部形状。'};
+let githubCatalog=null, updateBusy=false, updateError='', updateDownloadState={status:'idle'};
 const versionLabel=version=>version?'v'+version.replace(/^v/,''):'未知版本';
 function openUpdateSheet(tab,refresh=false){
   document.getElementById('sheet-root').innerHTML=`<div class="mask" onclick="if(event.target===this)closeSheet()"><section class="sheet" role="dialog" aria-modal="true" aria-label="版本与更新">
@@ -1929,14 +1939,38 @@ function openUpdateSheet(tab,refresh=false){
       <button class="${tab==='check'?'on':''}" aria-pressed="${tab==='check'}" onclick="openUpdateSheet('check')">检查更新</button>
       <button class="${tab==='history'?'on':''}" aria-pressed="${tab==='history'}" onclick="openUpdateSheet('history')">更新历史</button>
     </div>
+    <div id="update-download" aria-live="polite"></div>
     <div id="updates-body" class="updates-body" data-tab="${tab}"></div>
     <div class="update-links">
       <button onclick="Ledger.openGitHub('repository','')">GitHub 仓库 ↗</button>
       <button onclick="Ledger.openGitHub('releases','')">GitHub 发布页 ↗</button>
     </div>
   </section></div>`;
+  try{updateDownloadState=JSON.parse(Ledger.updateDownloadStatus());}catch{}
+  renderUpdateDownload();
   renderUpdateBody();
   if(refresh) requestUpdateCheck();
+}
+function setUpdateDownloadState(value){
+  const previous=updateDownloadState.status;
+  updateDownloadState=typeof value==='string'?JSON.parse(value):value;
+  renderUpdateDownload();
+  if(previous!==updateDownloadState.status)renderUpdateBody();
+}
+function downloadUpdate(tag){Ledger.downloadUpdate(tag);}
+function renderUpdateDownload(){
+  const box=document.getElementById('update-download');
+  if(!box)return;
+  const state=updateDownloadState,status=state.status;
+  if(!status||status==='idle'){box.innerHTML='';return;}
+  const busy=['connecting','downloading','verifying','cancelling'].includes(status);
+  const percent=state.total?Math.min(100,Math.floor(state.received/state.total*100)):0;
+  const size=bytes=>(bytes/1048576).toFixed(1)+' MB';
+  const title={connecting:'正在连接下载',downloading:`正在下载 · ${percent}%`,verifying:'正在校验安装包',cancelling:'正在取消下载',ready:'下载完成，可以安装',error:'下载未完成'}[status]||'更新下载';
+  const detail=status==='downloading'?`${size(state.received)} / ${size(state.total)}`:status==='ready'?'安装包已保存在本机，文件和签名校验通过。':status==='error'?state.message:'下载和安装都在本机完成。';
+  box.innerHTML=`<div class="update-download-card"><b>${esc(title)}</b><p>${esc(versionLabel(state.tag||''))} · ${esc(detail||'请重试')}</p>
+    ${busy?`<div class="update-progress" role="progressbar" aria-label="安装包下载进度" ${status==='downloading'?`aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100"`:''}><span style="width:${status==='verifying'?100:percent}%"></span></div><button class="qbtn" onclick="Ledger.cancelUpdate()" ${status==='cancelling'?'disabled':''}>取消下载</button>`:status==='ready'?`<button class="cta-btn" onclick="Ledger.installUpdate()">安装更新</button>`:`<button class="cta-btn" onclick="downloadUpdate(${arg(state.tag||'')})">重新下载</button>`}
+  </div>`;
 }
 function requestUpdateCheck(){
   if(updateBusy)return;
@@ -2006,7 +2040,7 @@ function renderUpdateBody(){
     body.innerHTML=`<div class="update-summary" role="status">
       <b>${esc(status)}</b><p>已安装 ${esc(current)}${latest?` · ${updateBusy||updateError?'上次查到':'GitHub 最新'} ${esc(versionLabel(latest.tag))}`:''}</p>
     </div>
-    ${available?`<button class="cta-btn" onclick="Ledger.openGitHub('${latest.hasApk?'apk':'release'}',${arg(latest.tag)})">${latest.hasApk?'前往 GitHub 下载 APK':'查看新版发布'}</button>`:''}
+    ${available&&!(updateDownloadState.status!=='idle'&&updateDownloadState.tag===latest.tag)?latest.hasApk?`<button class="cta-btn" onclick="downloadUpdate(${arg(latest.tag)})">下载更新</button>`:`<p class="update-caption">此版本暂未提供安装包，请稍后重新检查。</p>`:''}
     ${retry}`;
     return;
   }
@@ -2018,7 +2052,7 @@ function renderUpdateBody(){
       <summary>${esc(entry.title)}<span class="release-date">${esc([entry.date,versionLabel(entry.tag)===current?'当前版本':'',entry.github?'GitHub 发布':'随应用提供'].filter(Boolean).join(' · '))}</span></summary>
       <div class="release-notes">${renderReleaseNotes(entry.notes)}</div>
       ${entry.github?`<div class="update-links"><button onclick="Ledger.openGitHub('release',${arg(entry.tag)})">查看 GitHub 发布 ↗</button>
-      ${entry.hasApk?`<button onclick="Ledger.openGitHub('apk',${arg(entry.tag)})">下载 APK ↗</button>`:''}</div>`:''}
+      ${entry.hasApk?`<button onclick="downloadUpdate(${arg(entry.tag)})">下载到本机</button>`:''}</div>`:''}
     </details>`).join('')}${updateError?retry:''}`;
 }
 

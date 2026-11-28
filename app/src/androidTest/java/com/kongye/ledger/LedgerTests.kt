@@ -38,6 +38,12 @@ class LedgerTests:Instrumentation(){
  }
  override fun onStart(){val result=Bundle();try{
  require(targetContext.packageName.endsWith(".qa")) { "Tests must use the isolated QA package" }
+ if (mode == "apk-update") {
+  verifyApkDownload()
+  result.putString("stream", "PASS: local update download, integrity rejection, installed signing certificate and installer content URI")
+  finish(RESULT_OK,result)
+  return
+ }
  if (mode == "screen-image") {
   val previousZone = java.util.TimeZone.getDefault()
   screenshotZone?.let { java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(it)) }
@@ -218,6 +224,49 @@ class LedgerTests:Instrumentation(){
  s.db.clearAllTables();s.set("onboarded","false");result.putString("stream","PASS: keypad, parsing, dedupe, import, local and WebDAV backup, saved WebDAV password, malformed backup, and daily quota")
  finish(RESULT_OK,result)
  }catch(t:Throwable){result.putString("stream",t.stackTraceToString());finish(0,result)}}
+ private fun verifyApkDownload() {
+  val context=targetContext
+  val bytes="local APK download fixture".toByteArray()
+  val hash=java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString(""){"%02x".format(it)}
+  val tag="v99.0.0"
+  val url=LedgerUpdates.githubUrl("apk",tag)!!
+  val asset=LedgerApkAsset(tag,url,bytes.size.toLong(),hash)
+  var responseBytes=bytes
+  val client=OkHttpClient.Builder().addInterceptor { chain ->
+   check(chain.request().url.toString()==url)
+   Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("Fixture")
+    .body(responseBytes.toResponseBody()).build()
+  }.build()
+  val download=LedgerApkDownload(context,client)
+  var progress=0L
+  val file=download.download(asset){received,total->check(received in 0..total);progress=received}
+  check(file.readBytes().contentEquals(bytes) && progress==bytes.size.toLong())
+  check(runCatching{verifyLedgerUpdateApk(context,file)}.exceptionOrNull() is LedgerUpdateException)
+  check(file.delete())
+  responseBytes=bytes.copyOf().apply {this[0]=(this[0].toInt() xor 1).toByte()}
+  check(runCatching{download.download(asset){_,_->}}.exceptionOrNull() is LedgerUpdateException)
+  check(!file.exists() && !java.io.File(context.filesDir,"updates/download.apk.part").exists())
+  check(runCatching{download.download(asset.copy(url="https://example.invalid/a.apk")){_,_->}}.isFailure)
+  val ownApk=java.io.File(context.filesDir,"updates/qa-install-check.apk")
+  try {
+   java.io.File(context.applicationInfo.sourceDir).copyTo(ownApk,overwrite=true)
+   verifyLedgerUpdateApk(context,ownApk)
+   val intent=ledgerUpdateInstallIntent(context,ownApk)
+   check(intent.action==Intent.ACTION_VIEW && intent.data?.scheme=="content")
+   check(intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+   context.contentResolver.openInputStream(intent.data!!)!!.use { check(it.read()==0x50 && it.read()==0x4b) }
+  } finally {ownApk.delete()}
+  var release=JSONObject().put("tag_name",tag).put("assets",org.json.JSONArray().put(JSONObject()
+   .put("state","uploaded").put("browser_download_url",url).put("size",bytes.size).put("digest","sha256:$hash")))
+  val catalogClient=OkHttpClient.Builder().addInterceptor { chain ->
+   Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("Fixture")
+    .body(release.toString().toResponseBody()).build()
+  }.build()
+  check(LedgerUpdates(catalogClient).apk(tag)==asset)
+  release.put("draft",true)
+  check(runCatching{LedgerUpdates(catalogClient).apk(tag)}.exceptionOrNull() is LedgerUpdateException)
+ }
+
  private fun verifyGitHubUpdates() {
   val repo = "https://github.com/Mayleaves/KongyeLedger"
   val tag = "v0.3.20"
